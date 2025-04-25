@@ -1,0 +1,85 @@
+body {
+    font-family: sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+#auth-section, #app-section {
+    background-color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"],
+select,
+button {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    width: calc(100% - 22px); /* Adjust width considering padding and border */
+    max-width: 300px; /* Limit max width */
+}
+
+button {
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    cursor: pointer;
+    width: auto; /* Allow button width to adjust */
+    padding: 10px 15px;
+}
+
+button:hover {
+    background-color: #4cae4c;
+}
+
+#logout-button {
+    background-color: #d9534f;
+}
+#logout-button:hover {
+    background-color: #c9302c;
+}
+
+
+hr {
+    margin: 20px 0;
+    border: 0;
+    border-top: 1px solid #eee;
+}
+
+.message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 5px;
+    min-height: 1.2em; /* Reserve space */
+}
+
+.message.success {
+    color: green;
+}
+
+#photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Responsive grid */
+    gap: 10px;
+    margin-top: 15px;
+}
+
+#photo-gallery img {
+    width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    object-fit: cover; /* Ensure images cover the area nicely */
+    aspect-ratio: 1 / 1; /* Make images square */
+}

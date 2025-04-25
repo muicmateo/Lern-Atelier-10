@@ -1,0 +1,28 @@
+{
+  "name": "lern-atelier-10",
+  "version": "1.0.0",
+  "description": "25.4 bis 27.6",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muicmateo/Lern-Atelier-10.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/muicmateo/Lern-Atelier-10/issues"
+  },
+  "homepage": "https://github.com/muicmateo/Lern-Atelier-10#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "connect-sqlite3": "^0.9.15",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "multer": "^1.4.5-lts.2",
+    "sqlite3": "^5.1.7"
+  }
+}
