@@ -5,11 +5,11 @@
 ## Grob-Planung
 
 1. Welche Programmiersprache möchten Sie verwenden? Was denken Sie, wo Ihre Zeit und Übung am sinnvollsten ist?
-    Ich werde JavaScript (Node.js/Express.js) verwenden
+   **Ich werde JavaScript (Node.js/Express.js) verwenden**
 1. Welche Datenbank-Technologie möchten Sie üben? Fühlen Sie sich sicher mit SQL und möchten etwas Neues ausprobieren; oder möchten Sie sich weiter mit SQL beschäftigen?
-   Ich werde SQLite nutzen
+   **Ich werde SQLite nutzen**
 1. Was wäre ein geeignetes Abschluss-Projekt?
-  Mein Abschlussprojekt wird eine Web-App für Freunde zum Teilen von Fotos in Alben sein, die Login, Uploads, Galerien und Album-Verwaltung beinhalten wird.
+  **Mein Abschlussprojekt wird eine Web-App für Freunde zum Teilen von Fotos in Alben sein, die Login, Uploads, Galerien und Album-Verwaltung beinhalten wird.**
 ## 25.4
 
 Welche 3 *features* sind die wichtigsten Ihres Projektes? Wie können Sie die Machbarkeit dieser in jeweils 45' am einfachsten beweisen?
