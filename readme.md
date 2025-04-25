@@ -19,7 +19,7 @@ Welche 3 *features* sind die wichtigsten Ihres Projektes? Wie können Sie die Ma
 - [x] Anzeige von Fotos
 
 
-✍️ Heute habe ich... (50-100 Wörter)
+✍️ Heute habe ich alle drei features aus arbeitspaketen hinzugefügt. Erstens User Authentication (Registrierung, Login, Logout) mit Sessions und Passwort-Hashing. Eingeloggte Users können Fotos hochladen, die gespeichert und in einer Galerie angezeigt werden. Zusätzlich habe ich ein einfaches Frontend mit html css und js gemacht.
 
 ☝️ Vergessen Sie nicht, den Code von heute auf github hochzuladen. Ggf. bietet es sich an, für die Code-Schnipsel einen eigenen Ordner `exploration` zu erstellen.
 
