@@ -14,9 +14,9 @@
 
 Welche 3 *features* sind die wichtigsten Ihres Projektes? Wie können Sie die Machbarkeit dieser in jeweils 45' am einfachsten beweisen?
 
-- [ ] Benutzerauthentifizierung und Autorisierung
-- [ ] Foto-Upload
-- [ ] Anzeige von Fotos
+- [x] Benutzerauthentifizierung und Autorisierung
+- [x] Foto-Upload
+- [x] Anzeige von Fotos
 
 
 ✍️ Heute habe ich... (50-100 Wörter)
