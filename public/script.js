@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadForm = document.getElementById('upload-form');
     const logoutButton = document.getElementById('logout-button');
     const userGreeting = document.getElementById('user-greeting');
-    const photoGallery = document.getElementById('photo-gallery'); // Keep this single declaration
+    const photoGallery = document.getElementById('photo-gallery');
+    const photoGalleryAll = document.getElementById('photo-gallery-all'); // Add this line
     const photoInput = document.getElementById('photo-input'); // Keep this single declaration
 
     // --- Message elements ---
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 userGreeting.textContent = user.username;
                 authSection.style.display = 'none';
                 appSection.style.display = 'block';
-                loadMyPhotos(); // Corrected function name call
+                loadMyPhotos(false); 
             })
             .catch(error => {
                 // User is not logged in
@@ -156,16 +157,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Photo Management ---
     // Variables photoGallery, uploadForm, photoInput, uploadMessage are already declared above
 
-    // Function to load user's photos
-    async function loadMyPhotos() {
-        // Clear gallery before loading
-        photoGallery.innerHTML = '<p>Lade Fotos...</p>';
+    // Function to load user's photos or all photos
+    async function loadMyPhotos(getAll = false) {
+        // Determine the target gallery and API endpoint based on the 'getAll' flag
+        const targetGallery = getAll ? photoGalleryAll : photoGallery; // Uses the new variable
+        const endpoint = getAll ? '/api/photos/all' : '/api/photos/my';
+
+        // Clear the target gallery before loading
+        if (!targetGallery) {
+            console.error(`Gallery element not found for getAll=${getAll}`);
+            return; // Exit if the target gallery doesn't exist
+        }
+        targetGallery.innerHTML = '<p>Lade Fotos...</p>';
+
         try {
-            const response = await fetch('/api/photos/my');
+            // Fetch photos from the determined endpoint
+            const response = await fetch(endpoint);
+
             if (!response.ok) {
-                if (response.status === 401) {
-                    console.log('Not logged in, cannot load photos.');
-                    // No need to update gallery here, checkAuthStatus handles hiding/showing sections
+                if (response.status === 401 && !getAll) { // Only expect 401 for '/my' if not logged in
+                    console.log('Not logged in, cannot load personal photos.');
+                    targetGallery.innerHTML = '<p>Please log in to see your photos.</p>'; // Update target gallery
                     return;
                 }
                 // Try to get error message from server response
@@ -178,10 +190,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const photos = await response.json();
 
-            photoGallery.innerHTML = ''; // Clear loading message
+            targetGallery.innerHTML = ''; // Clear loading message from the target gallery
 
             if (photos.length === 0) {
-                photoGallery.innerHTML = '<p>You have not uploaded any photos yet.</p>';
+                targetGallery.innerHTML = getAll
+                    ? '<p>No photos have been uploaded by anyone yet.</p>'
+                    : '<p>You have not uploaded any photos yet.</p>';
             } else {
                 photos.forEach(photo => {
                     const container = document.createElement('div');
@@ -190,31 +204,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     const img = document.createElement('img');
                     img.src = `/uploads/${photo.filename}`;
-                    img.alt = `Photo by User`; // More descriptive alt text if possible
-                    // Add error handling for broken images
-                    img.onerror = () => {
-                        console.error(`Failed to load image: /uploads/${photo.filename}`);
-                        container.innerHTML = '<p style="color: red;">Bild nicht ladbar</p>'; // Indicate broken image
-                    };
+                    img.alt = getAll && photo.username ? `Photo by ${photo.username}` : `Photo ${photo.id}`;
 
+                    // Modify the onerror handler
+                    img.onerror = () => {
+                        console.error(`Failed to load image: /uploads/${photo.filename}. Removing container.`);
+                        // Remove the entire photo container div if the image fails to load
+                        container.remove();
+                    };
 
                     const overlay = document.createElement('div');
                     overlay.classList.add('photo-overlay');
 
-                    const deleteButton = document.createElement('button');
-                    deleteButton.classList.add('delete-button');
-                    deleteButton.textContent = 'Delete';
-                    deleteButton.setAttribute('aria-label', `Delete photo ${photo.id}`); // Accessibility
+                    // Only add delete button if viewing own photos (not getAll)
+                    if (!getAll) {
+                        const deleteButton = document.createElement('button');
+                        deleteButton.classList.add('delete-button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.setAttribute('aria-label', `Delete photo ${photo.id}`);
+                        overlay.appendChild(deleteButton);
+                    } else {
+                        // Optionally display username in overlay for 'all photos' view
+                        if (photo.username) {
+                            const usernameSpan = document.createElement('span');
+                            usernameSpan.textContent = `By: ${photo.username}`;
+                            usernameSpan.style.color = 'white'; // Style as needed
+                            usernameSpan.style.fontSize = '0.8em';
+                            overlay.appendChild(usernameSpan);
+                        }
+                    }
 
-                    overlay.appendChild(deleteButton);
                     container.appendChild(img);
                     container.appendChild(overlay);
-                    photoGallery.appendChild(container);
+                    targetGallery.appendChild(container); // Append to the correct gallery
                 });
             }
         } catch (error) {
-            console.error('Error loading photos:', error);
-            photoGallery.innerHTML = `<p style="color: red;">Fehler beim Laden der Fotos: ${error.message}. Bitte versuchen Sie es später erneut.</p>`;
+            console.error(`Error loading photos (getAll=${getAll}):`, error);
+            targetGallery.innerHTML = `<p style="color: red;">Fehler beim Laden der Fotos: ${error.message}. Bitte versuchen Sie es später erneut.</p>`;
         }
     }
 
@@ -257,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Event Listener for Deleting Photos (using event delegation)
+    // Event listener for photo deletions
     photoGallery.addEventListener('click', async (event) => {
         if (event.target.classList.contains('delete-button')) {
             const photoContainer = event.target.closest('.photo-container');
@@ -293,5 +320,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // --- Initial Check ---
-    checkAuthStatus(); // Corrected initial function call
-});
+    function checkAuthStatus() {
+        fetch('/api/users/me')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    userGreeting.textContent = '';
+                    throw new Error('Not authenticated');
+                }
+            })
+            .then(user => {
+                userGreeting.textContent = user.username;
+                authSection.style.display = 'none';
+                appSection.style.display = 'block';
+                loadMyPhotos(false); // Load user's own photos into #photo-gallery
+                loadMyPhotos(true);  // Load all photos into #photo-gallery-all
+            })
+            .catch(error => {
+                console.log('Authentication check failed:', error.message);
+                authSection.style.display = 'block';
+                appSection.style.display = 'none';
+                photoGallery.innerHTML = ''; // Clear personal gallery
+                if (photoGalleryAll) photoGalleryAll.innerHTML = ''; // Clear all photos gallery
+                // Decide if you want to load all photos even when not logged in
+                // If the backend endpoint /api/photos/all is public, you can uncomment the next line:
+                // loadMyPhotos(true);
+            });
+    }
+
+    // --- Initial Check ---
+    checkAuthStatus();
+}); // End of DOMContentLoaded

@@ -51,6 +51,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Session Middleware Configuration
+
+
+
 app.use(session({
     store: new SQLiteStore({
         db: 'photoshare.db', // Name der Datenbankdatei
@@ -228,6 +231,30 @@ app.get('/api/photos/my', isAuthenticated, (req, res) => {
         res.status(200).json(rows);
     });
 });
+
+// Alle Fotos abrufen (NEU)
+// Optional: Add 'isAuthenticated' middleware if only logged-in users should see all photos
+app.get('/api/photos/all', (req, res) => {
+    // Join photos with users table to get username
+    const sql = `
+        SELECT
+            p.id,
+            p.filename,
+            p.upload_timestamp,
+            u.username
+        FROM photos p
+        JOIN users u ON p.user_id = u.id
+        ORDER BY p.upload_timestamp DESC
+    `;
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            console.error("Fehler beim Abrufen aller Fotos:", err.message);
+            return res.status(500).json({ message: "Fehler beim Abrufen aller Fotos." });
+        }
+        res.status(200).json(rows);
+    });
+});
+
 
 // Eigenes Foto löschen
 app.delete('/api/photos/:photoId', isAuthenticated, (req, res) => {
