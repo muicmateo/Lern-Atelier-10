@@ -47,8 +47,14 @@ const upload = multer({
 });
 
 // Statische Dateien bereitstellen
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve static files from node_modules for libraries like Lightbox
+app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
 // Session Middleware Configuration
 

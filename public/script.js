@@ -8,19 +8,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const logoutButton = document.getElementById('logout-button');
     const userGreeting = document.getElementById('user-greeting');
     const photoGallery = document.getElementById('photo-gallery');
-    const photoGalleryAll = document.getElementById('photo-gallery-all'); // Add this line
-    const photoInput = document.getElementById('photo-input'); // Keep this single declaration
+    const photoGalleryAll = document.getElementById('photo-gallery-all');
+    const photoInput = document.getElementById('photo-input'); // Make sure this is declared
 
     // --- Message elements ---
     const loginMessage = document.getElementById('login-message');
     const registerMessage = document.getElementById('register-message');
-    const uploadMessage = document.getElementById('upload-message'); // Keep this single declaration
+    const uploadMessage = document.getElementById('upload-message'); // Ensure this is declared
+
+  
+    // Remove or comment out: captionText, prevBtn, nextBtn, galleryItems, currentIndex
 
     // --- Event Listeners ---
     loginForm.addEventListener('submit', handleLogin);
     registerForm.addEventListener('submit', handleRegister);
-    // Removed the first uploadForm listener, keep the async one below
+    uploadForm.addEventListener('submit', handleUpload); // This line expects a function named handleUpload
     logoutButton.addEventListener('click', handleLogout);
+
+    // Add delegated event listener for clicking images in BOTH galleries
+    document.body.addEventListener('click', handleImageClick); // Listen on body
 
     // --- Functions ---
 
@@ -28,28 +34,25 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkAuthStatus() {
         fetch('/api/users/me')
             .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    // Clear any previous user greeting if not authenticated
-                    userGreeting.textContent = '';
-                    throw new Error('Not authenticated');
-                }
+                if (response.ok) return response.json();
+                userGreeting.textContent = '';
+                throw new Error('Not authenticated');
             })
             .then(user => {
-                // User is logged in
                 userGreeting.textContent = user.username;
                 authSection.style.display = 'none';
                 appSection.style.display = 'block';
-                loadMyPhotos(false); 
+                // Load photos without setupGalleryItems
+                Promise.all([loadMyPhotos(false), loadMyPhotos(true)]);
             })
             .catch(error => {
-                // User is not logged in
                 console.log('Authentication check failed:', error.message);
                 authSection.style.display = 'block';
                 appSection.style.display = 'none';
-                // Clear photo gallery if user logs out or fails auth check
                 photoGallery.innerHTML = '';
+                if (photoGalleryAll) photoGalleryAll.innerHTML = '';
+                // Remove this line as galleryItems is not defined
+                // galleryItems = []; 
             });
     }
 
@@ -127,8 +130,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Removed the old handleUpload function as it was redundant
-
     // Function to handle user logout
     function handleLogout() {
         fetch('/api/auth/logout', {
@@ -157,29 +158,76 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Photo Management ---
     // Variables photoGallery, uploadForm, photoInput, uploadMessage are already declared above
 
+    // Function to handle photo upload
+    function handleUpload(event) {
+        event.preventDefault(); // Prevent default form submission
+        uploadMessage.textContent = ''; // Clear previous messages
+        uploadMessage.className = 'message';
+
+        const photoFile = photoInput.files[0];
+        if (!photoFile) {
+            uploadMessage.textContent = 'Bitte wählen Sie eine Datei aus.';
+            uploadMessage.className = 'message error';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('photo', photoFile); // 'photo' must match the name attribute in HTML and multer field name in server.js
+
+        uploadMessage.textContent = 'Lade Foto hoch...';
+        uploadMessage.className = 'message'; // Neutral message during upload
+
+        fetch('/api/photos/upload', {
+            method: 'POST',
+            body: formData // No 'Content-Type' header needed for FormData, browser sets it with boundary
+            // Headers like 'Authorization' are usually handled by cookies/sessions here
+        })
+        .then(async response => {
+            const data = await response.json(); // Try to parse JSON regardless of status
+            if (!response.ok) {
+                // Handle specific errors like 401 Unauthorized
+                if (response.status === 401) {
+                   throw new Error('Nicht autorisiert. Bitte erneut einloggen.');
+                }
+                 // Throw an error with the message from the server or a default one
+                throw new Error(data.message || `Upload fehlgeschlagen: ${response.statusText}`);
+            }
+            return data; // Return data on success
+        })
+        .then(data => {
+            uploadMessage.textContent = 'Foto erfolgreich hochgeladen!';
+            uploadMessage.className = 'message success';
+            uploadForm.reset(); // Clear the form
+            loadMyPhotos(false); // Reload the user's photo gallery
+            loadMyPhotos(true); // Reload the 'all photos' gallery if needed
+        })
+        .catch(error => {
+            uploadMessage.textContent = `Fehler: ${error.message}`;
+            uploadMessage.className = 'message error';
+            console.error('Upload error:', error);
+             // If unauthorized, redirect to login might be desired, or just show message
+            if (error.message.includes('Nicht autorisiert')) {
+                 // Optional: Force a refresh of auth status to show login form
+                 checkAuthStatus();
+            }
+        });
+    }
+
+
     // Function to load user's photos or all photos
     async function loadMyPhotos(getAll = false) {
-        // Determine the target gallery and API endpoint based on the 'getAll' flag
-        const targetGallery = getAll ? photoGalleryAll : photoGallery; // Uses the new variable
+        const targetGallery = getAll ? photoGalleryAll : photoGallery;
         const endpoint = getAll ? '/api/photos/all' : '/api/photos/my';
 
-        // Clear the target gallery before loading
         if (!targetGallery) {
             console.error(`Gallery element not found for getAll=${getAll}`);
-            return; // Exit if the target gallery doesn't exist
+            return;
         }
         targetGallery.innerHTML = '<p>Lade Fotos...</p>';
 
         try {
-            // Fetch photos from the determined endpoint
             const response = await fetch(endpoint);
-
             if (!response.ok) {
-                if (response.status === 401 && !getAll) { // Only expect 401 for '/my' if not logged in
-                    console.log('Not logged in, cannot load personal photos.');
-                    targetGallery.innerHTML = '<p>Please log in to see your photos.</p>'; // Update target gallery
-                    return;
-                }
                 // Try to get error message from server response
                 let errorMsg = `HTTP error! status: ${response.status}`;
                 try {
@@ -189,8 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(errorMsg);
             }
             const photos = await response.json();
-
-            targetGallery.innerHTML = ''; // Clear loading message from the target gallery
+            targetGallery.innerHTML = '';
 
             if (photos.length === 0) {
                 targetGallery.innerHTML = getAll
@@ -202,21 +249,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     container.classList.add('photo-container');
                     container.dataset.photoId = photo.id;
 
+                    // Create a link for Lightbox
+                    const link = document.createElement('a');
+                    link.href = `/uploads/${photo.filename}`;
+                    link.dataset.lightbox = getAll ? "all-photos" : "my-photos"; // Group photos
+                    
+                    const altText = getAll && photo.username ? `Photo by ${photo.username}` : `Photo ID ${photo.id}`;
+                    link.dataset.title = altText; // This becomes the caption in Lightbox
+
                     const img = document.createElement('img');
                     img.src = `/uploads/${photo.filename}`;
-                    img.alt = getAll && photo.username ? `Photo by ${photo.username}` : `Photo ${photo.id}`;
+                    img.alt = altText;
 
-                    // Modify the onerror handler
                     img.onerror = () => {
                         console.error(`Failed to load image: /uploads/${photo.filename}. Removing container.`);
-                        // Remove the entire photo container div if the image fails to load
                         container.remove();
                     };
+
+                    // Add the image to the link
+                    link.appendChild(img);
 
                     const overlay = document.createElement('div');
                     overlay.classList.add('photo-overlay');
 
-                    // Only add delete button if viewing own photos (not getAll)
                     if (!getAll) {
                         const deleteButton = document.createElement('button');
                         deleteButton.classList.add('delete-button');
@@ -224,24 +279,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         deleteButton.setAttribute('aria-label', `Delete photo ${photo.id}`);
                         overlay.appendChild(deleteButton);
                     } else {
-                        // Optionally display username in overlay for 'all photos' view
                         if (photo.username) {
                             const usernameSpan = document.createElement('span');
                             usernameSpan.textContent = `By: ${photo.username}`;
-                            usernameSpan.style.color = 'white'; // Style as needed
+                            usernameSpan.style.color = 'white';
                             usernameSpan.style.fontSize = '0.8em';
                             overlay.appendChild(usernameSpan);
                         }
                     }
 
-                    container.appendChild(img);
+                    container.appendChild(link);
                     container.appendChild(overlay);
-                    targetGallery.appendChild(container); // Append to the correct gallery
+                    targetGallery.appendChild(container);
                 });
             }
         } catch (error) {
             console.error(`Error loading photos (getAll=${getAll}):`, error);
-            targetGallery.innerHTML = `<p style="color: red;">Fehler beim Laden der Fotos: ${error.message}. Bitte versuchen Sie es später erneut.</p>`;
+            targetGallery.innerHTML = `<p style="color: red;">Fehler beim Laden der Fotos: ${error.message}.</p>`;
         }
     }
 
@@ -319,35 +373,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- Initial Check ---
-    function checkAuthStatus() {
-        fetch('/api/users/me')
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    userGreeting.textContent = '';
-                    throw new Error('Not authenticated');
-                }
-            })
-            .then(user => {
-                userGreeting.textContent = user.username;
-                authSection.style.display = 'none';
-                appSection.style.display = 'block';
-                loadMyPhotos(false); // Load user's own photos into #photo-gallery
-                loadMyPhotos(true);  // Load all photos into #photo-gallery-all
-            })
-            .catch(error => {
-                console.log('Authentication check failed:', error.message);
-                authSection.style.display = 'block';
-                appSection.style.display = 'none';
-                photoGallery.innerHTML = ''; // Clear personal gallery
-                if (photoGalleryAll) photoGalleryAll.innerHTML = ''; // Clear all photos gallery
-                // Decide if you want to load all photos even when not logged in
-                // If the backend endpoint /api/photos/all is public, you can uncomment the next line:
-                // loadMyPhotos(true);
-            });
-    }
 
     // --- Initial Check ---
     checkAuthStatus();
