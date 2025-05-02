@@ -27,7 +27,7 @@ Welche 3 *features* sind die wichtigsten Ihres Projektes? Wie können Sie die Ma
 
 Ausgehend von Ihren Erfahrungen vom 25.4, welche *features* brauchen noch mehr Recherche? (Sie können auch mehrere AP für ein *feature* aufwenden.)
 
-- [ ] Frontend Design Mockup (📵)
+- [x] Frontend Design Mockup (📵)
 - [x] Foto Löschfunktion
 - [ ] Zoom auf Fotos mit click  
 - [ ] nach wichtigen Aktionen (wie Login, Registrierung, Foto-Upload) kurze, klare Nachrichten direkt auf der Webseite anzeigen
