@@ -8,12 +8,20 @@ const dbPath = path.resolve(__dirname, 'photoshare.db');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Fehler beim Verbinden mit der SQLite-Datenbank:', err.message);
+    // Es ist wichtig, hier möglicherweise den Prozess zu beenden oder einen Fehler auszulösen,
+    // da die Anwendung ohne Datenbankverbindung wahrscheinlich nicht korrekt funktioniert.
+    // throw err; // Oder process.exit(1);
   } else {
     console.log('Erfolgreich mit der SQLite-Datenbank verbunden.');
     // Tabellen erstellen, wenn sie noch nicht existieren
     createTables();
   }
 });
+
+// Exportiere die db-Instanz SOFORT.
+// server.js erhält diese Instanz, auch wenn die Verbindung und Tabellenerstellung noch laufen.
+// Die sqlite3-Bibliothek puffert Befehle, bis die Verbindung hergestellt ist.
+module.exports = db;
 
 // Funktion zum Erstellen der Tabellen
 function createTables() {
@@ -54,7 +62,7 @@ function createTables() {
         filename TEXT NOT NULL,
         user_id INTEGER NOT NULL,
         album_id INTEGER NOT NULL, 
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE
     )`, (err) => {
@@ -71,8 +79,8 @@ function createTables() {
     // Sie möchten spezifische Indizes oder Constraints hinzufügen, was selten der Fall ist.
     // console.log('Session-Tabelle wird von connect-sqlite3 verwaltet.');
 
-});
+  }); // Diese Klammer schließt db.serialize()
 
-module.exports = db;
-
-}
+  // module.exports = db; // HIER ENTFERNEN
+} // Diese Klammer schließt createTables()
+// Die überflüssige Klammer wurde hier entfernt.

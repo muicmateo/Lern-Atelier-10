@@ -45,19 +45,18 @@ Planen Sie nun Ihr Projekt, sodass die *Kern-Funktionalität* in 3 Sitzungen rea
 Diese Kern-Funktionalitäten brechen Sie nun in etwa 4 AP je herunter. Versuchen Sie jetzt bereits, auch die Sitzung vom 16.5 und 23.5 zu planen (im Wissen, dass Sie kleine Anpassungen an Ihrer Planung vornehmen können).
 
 - [ ] Frontend design implementieren
-- [ ] Albums hinzufügen
+- [x] Albums hinzufügen (Teilweise geschafft)
 - [x] Fullscreen Fotos mit click
 
-✍️ Heute habe ich... (50-100 Wörter)
+✍️ Heute habe ich Fullscreen von Fotos beim Click hinzugefügt aber um das zu erreichen musste ich alle hover effekte und delete funktion löschen. Dann kam der Album Arbeitspaket und der hat alles kaputt gemacht. Ich konnte mich nicht einlogen und dann konnten die Bilder nicht aufgerufen werden usw. Doch das Issue mit Einlogen habe ich geschafft zu lösen. Die anderen Fehler sind immernoch aktiv. Zu Frontend design bin ich noch nicht gekommen. (50-100 Wörter)
 
-☝️  Vergessen Sie nicht, den Code von heute auf github hochzuladen.
 
 ## 16.5
 
-- [ ] ...
-- [ ] ...
-- [ ] ...
-- [ ] ...
+- [ ] Datenbank (SQLite) fehler lösen 
+- [ ] Albums feature komplett fertig hinzufügen
+- [ ] Nachrichten für Benutzeraktionen verbessern
+- [ ] Frontend design anfangen zu implementieren
 
 ✍️ Heute habe ich... (50-100 Wörter)
 

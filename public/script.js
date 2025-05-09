@@ -1,54 +1,40 @@
+// --- Global Variables for DOM Elements and State ---
+let authSection, appSection, loginForm, registerForm, loginMessage, registerMessage;
+let userGreeting, logoutButton, uploadForm, photoInput, uploadMessage;
+let myPhotosGallery, globalPhotosGallery, createAlbumForm, albumNameInput, albumMessage;
+let albumsListDiv, albumSelectUpload, albumPhotoGalleryDiv, currentAlbumTitle;
+
+let currentUserId = null; // To store the ID of the logged-in user
+
 document.addEventListener('DOMContentLoaded', function() {
-    // --- DOM Elements ---
-    const authSection = document.getElementById('auth-section');
-    const appSection = document.getElementById('app-section');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const loginMessage = document.getElementById('login-message');
-    const registerMessage = document.getElementById('register-message');
-    const userGreeting = document.getElementById('user-greeting');
-    const logoutButton = document.getElementById('logout-button');
-    const uploadForm = document.getElementById('upload-form');
-    const photoInput = document.getElementById('photo-input');
-    const uploadMessage = document.getElementById('upload-message');
-    const myPhotosGallery = document.getElementById('photo-gallery'); // For "My Photos (All)" - Renamed for clarity
-    const globalPhotosGallery = document.getElementById('photo-gallery-all'); // For "All Fotos (Global)" - Renamed for clarity
-
-    // New Album related DOM Elements
-    const createAlbumForm = document.getElementById('create-album-form');
-    const albumNameInput = document.getElementById('album-name-input');
-    const albumMessage = document.getElementById('album-message');
-    const albumsListDiv = document.getElementById('albums-list');
-    const albumSelectUpload = document.getElementById('album-select-upload');
-    const albumPhotoGalleryDiv = document.getElementById('album-photo-gallery');
-    const currentAlbumTitle = document.getElementById('current-album-title');
-
-    // Add a global keydown listener to handle Enter key when Lightbox is active
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-            // Check if Lightbox is currently active and visible
-            // Lightbox2 adds a div with id 'lightbox' and sets its display to 'block' when open
-            const lightboxOverlay = document.getElementById('lightboxOverlay'); // Lightbox background
-            const lightboxContainer = document.getElementById('lightbox');     // Lightbox main container
-
-            // Check if either the overlay or the main container is visible
-            const isLightboxVisible = (lightboxOverlay && getComputedStyle(lightboxOverlay).display !== 'none') ||
-                                        (lightboxContainer && getComputedStyle(lightboxContainer).display !== 'none');
-
-            if (isLightboxVisible) {
-                // If Lightbox is visible, prevent the default action of the Enter key.
-                // This stops it from "clicking" any focused button underneath (like logout).
-                event.preventDefault();
-            }
-        }
-    });
+    // --- Initialize DOM Elements ---
+    authSection = document.getElementById('auth-section');
+    appSection = document.getElementById('app-section');
+    loginForm = document.getElementById('login-form');
+    registerForm = document.getElementById('register-form');
+    loginMessage = document.getElementById('login-message');
+    registerMessage = document.getElementById('register-message');
+    userGreeting = document.getElementById('user-greeting');
+    logoutButton = document.getElementById('logout-button');
+    uploadForm = document.getElementById('upload-form');
+    photoInput = document.getElementById('photo-input');
+    uploadMessage = document.getElementById('upload-message');
+    myPhotosGallery = document.getElementById('photo-gallery');
+    globalPhotosGallery = document.getElementById('photo-gallery-all');
+    createAlbumForm = document.getElementById('create-album-form');
+    albumNameInput = document.getElementById('album-name-input');
+    albumMessage = document.getElementById('album-message');
+    albumsListDiv = document.getElementById('albums-list');
+    albumSelectUpload = document.getElementById('album-select-upload');
+    albumPhotoGalleryDiv = document.getElementById('album-photo-gallery');
+    currentAlbumTitle = document.getElementById('current-album-title');
 
     // Set up event listeners
     if (loginForm) loginForm.addEventListener('submit', handleLogin);
-    if (registerForm) registerForm.addEventListener('submit', handleRegister);
+    if (registerForm) registerForm.addEventListener('submit', handleRegister); // Now handleRegister will be found
     if (logoutButton) logoutButton.addEventListener('click', handleLogout);
     if (uploadForm) uploadForm.addEventListener('submit', handleUpload);
-    if (createAlbumForm) createAlbumForm.addEventListener('submit', handleCreateAlbum);
+    if (createAlbumForm) createAlbumForm.addEventListener('submit', handleCreateAlbum); // Now handleCreateAlbum will be found
 
     // --- Initial Check ---
     checkAuthStatus();
@@ -61,6 +47,7 @@ function showMessage(element, message, isError = false) {
     if (element) {
         element.textContent = message;
         element.style.color = isError ? 'red' : 'green';
+        element.style.display = 'block'; // Make sure message is visible
     }
 }
 
@@ -70,326 +57,401 @@ async function checkAuthStatus() {
         const response = await fetch('/api/users/me');
         if (response.ok) {
             const user = await response.json();
-            currentUserId = user.id; // Store user ID
-            if (userGreeting) userGreeting.textContent = user.username;
-            if (authSection) authSection.style.display = 'none';
-            if (appSection) appSection.style.display = 'block';
-            loadAlbums(); // Load albums for the logged-in user
-            loadMyPhotos(false); // Load all photos of the current user
-            loadAllPhotos(); // Load all photos from all users
+            currentUserId = user.id; // currentUserId is now global
+            if (userGreeting) userGreeting.textContent = user.username; // userGreeting is now global
+            if (authSection) authSection.style.display = 'none'; // authSection is now global
+            if (appSection) appSection.style.display = 'block'; // appSection is now global
+            
+            // Call the newly defined functions
+            loadAlbums();
+            loadMyPhotos(false); // Assuming false means don't force refresh or similar logic
+            loadAllPhotos();
+
         } else {
-            currentUserId = null;
-            if (authSection) authSection.style.display = 'block';
-            if (appSection) appSection.style.display = 'none';
-            clearGalleriesAndAlbumInfo();
+            clearAuthState();
         }
     } catch (error) {
         console.error('Error checking auth status:', error);
-        if (authSection) authSection.style.display = 'block';
-        if (appSection) appSection.style.display = 'none';
-        clearGalleriesAndAlbumInfo();
+        clearAuthState();
     }
 }
 
+function clearAuthState() {
+    currentUserId = null; // currentUserId is now global
+    if (authSection) authSection.style.display = 'block'; // authSection is now global
+    if (appSection) appSection.style.display = 'none'; // appSection is now global
+    clearGalleriesAndAlbumInfo();
+}
+
 function clearGalleriesAndAlbumInfo() {
-    if (myPhotosGallery) myPhotosGallery.innerHTML = '<p>Bitte einloggen, um Fotos zu sehen.</p>';
-    if (globalPhotosGallery) globalPhotosGallery.innerHTML = '<p>Bitte einloggen, um Fotos zu sehen.</p>';
-    if (albumsListDiv) albumsListDiv.innerHTML = '<p>Bitte einloggen, um Alben zu sehen.</p>';
-    if (albumPhotoGalleryDiv) albumPhotoGalleryDiv.innerHTML = '<p>Bitte ein Album auswählen.</p>';
-    if (currentAlbumTitle) currentAlbumTitle.textContent = 'Fotos im ausgewählten Album';
-    if (albumSelectUpload) albumSelectUpload.innerHTML = '<option value="">-- Album auswählen --</option>';
+    if (myPhotosGallery) myPhotosGallery.innerHTML = '<p>Bitte einloggen, um Fotos zu sehen.</p>'; // myPhotosGallery is now global
+    if (globalPhotosGallery) globalPhotosGallery.innerHTML = '<p>Bitte einloggen, um Fotos zu sehen.</p>'; // globalPhotosGallery is now global
+    if (albumsListDiv) albumsListDiv.innerHTML = '<p>Bitte einloggen, um Alben zu sehen.</p>'; // albumsListDiv is now global
+    if (albumPhotoGalleryDiv) albumPhotoGalleryDiv.innerHTML = '<p>Bitte ein Album auswählen.</p>'; // albumPhotoGalleryDiv is now global
+    if (currentAlbumTitle) currentAlbumTitle.textContent = 'Fotos im ausgewählten Album'; // currentAlbumTitle is now global
+    if (albumSelectUpload) albumSelectUpload.innerHTML = '<option value="">-- Album auswählen --</option>'; // albumSelectUpload is now global
 }
 
 // Function to handle user login
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
-    loginMessage.textContent = ''; // Clear previous messages
-    loginMessage.className = 'message';
+    if (!loginMessage || !loginForm) {
+        console.error("Login form or message element not found.");
+        return;
+    }
+    showMessage(loginMessage, '', false); // Clear previous messages
 
     const usernameOrEmail = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
 
-    // Validate input
     if (!usernameOrEmail || !password) {
-        loginMessage.textContent = 'Bitte geben Sie Benutzername/E-Mail und Passwort ein.';
-        loginMessage.className = 'message error';
+        // Use the global loginMessage variable
+        showMessage(loginMessage, 'Bitte geben Sie Benutzername/E-Mail und Passwort ein.', true);
         return;
     }
 
     // Show loading message
-    loginMessage.textContent = 'Anmeldung läuft...';
-    loginMessage.className = 'message';
+    // Use the global loginMessage variable
+    showMessage(loginMessage, 'Anmeldung läuft...', false);
 
-    fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ usernameOrEmail, password })
-    })
-    .then(response => {
-        // First check if we can parse the response as JSON
-        return response.json().then(data => {
-            // Return both the response object and the parsed data
-            return { response, data };
-        }).catch(error => {
-            // If JSON parsing fails, return response with null data
-            console.error('Error parsing JSON response:', error);
-            return { response, data: null };
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usernameOrEmail, password })
         });
-    })
-    .then(({ response, data }) => {
+        const data = await response.json();
         if (!response.ok) {
-            // Handle error response
-            const errorMessage = data && data.message ? data.message : `Login fehlgeschlagen: ${response.status} ${response.statusText}`;
-            throw new Error(errorMessage);
+            throw new Error(data.message || `Login fehlgeschlagen: ${response.status}`);
         }
-
-        // Handle successful login
-        loginMessage.textContent = 'Login erfolgreich!';
-        loginMessage.className = 'message success';
-        document.getElementById('login-form').reset();
+        // Successful login
+        // Use the global loginMessage variable
+        showMessage(loginMessage, 'Login erfolgreich!', false);
+        if (loginForm) loginForm.reset(); // loginForm is now global
         checkAuthStatus(); // Refresh auth status and load app section
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Login error:', error);
-        loginMessage.textContent = error.message || 'Ein Fehler ist aufgetreten bei der Anmeldung.';
-        loginMessage.className = 'message error';
-    });
+        // Use the global loginMessage variable
+        showMessage(loginMessage, error.message || 'Ein Fehler ist aufgetreten bei der Anmeldung.', true);
+    }
 }
 
 // Function to handle user registration
-function handleRegister(event) {
+async function handleRegister(event) {
     event.preventDefault();
-    registerMessage.textContent = ''; // Clear previous messages
-    registerMessage.className = 'message';
+    if (!registerMessage || !registerForm) {
+        console.error("Register form or message element not found");
+        return;
+    }
+    showMessage(registerMessage, '', false); // Clear previous messages
 
     const username = document.getElementById('register-username').value;
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
 
-    fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, email, password })
-    })
-    .then(async response => { // Make async to parse JSON even on error
+    if (!username || !email || !password) {
+        showMessage(registerMessage, 'Bitte füllen Sie alle Felder aus.', true);
+        return;
+    }
+    showMessage(registerMessage, 'Registrierung wird verarbeitet...', false);
+
+    try {
+        const response = await fetch('/api/auth/register', { // Ensure this endpoint exists
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, email, password })
+        });
+
         const data = await response.json();
         if (!response.ok) {
+            // If the server returns an error (like 500), response.ok will be false.
+            // data.message would contain "Interner Serverfehler" if the server sent it.
             throw new Error(data.message || `HTTP error! status: ${response.status}`);
         }
-        return data; // Return data on success
-    })
-    .then(data => {
-        registerMessage.textContent = 'Registrierung erfolgreich! Sie können sich jetzt einloggen.';
-        registerMessage.className = 'message success'; // Use success class
-        registerForm.reset();
-    })
-    .catch(error => {
-        registerMessage.textContent = error.message || 'Ein Fehler ist aufgetreten.';
-        registerMessage.className = 'message error'; // Use error class
-        console.error('Registration error:', error);
-    });
+        
+        showMessage(registerMessage, 'Registrierung erfolgreich! Sie können sich jetzt einloggen.', false);
+        if (registerForm) registerForm.reset(); // registerForm is now global
+        // Optionally, switch to login view or auto-login
+    } catch (error) { // This is where the error is caught (around line 169)
+        console.error('Registration error:', error); // This logs the error to the console
+        showMessage(registerMessage, error.message || 'Ein Fehler ist bei der Registrierung aufgetreten.', true);
+    }
 }
 
 // Function to handle user logout
 function handleLogout() {
-    fetch('/api/auth/logout', {
-        method: 'POST'
-    })
+    fetch('/api/auth/logout', { method: 'POST' })
     .then(response => {
-         if (!response.ok) {
-            // Even on logout, check for potential server errors
-            throw new Error(`Logout request failed: ${response.statusText}`);
+        if (!response.ok) {
+             // Try to parse error message from server if logout fails
+            return response.json().then(err => { throw new Error(err.message || 'Logout fehlgeschlagen.'); });
         }
-        return response.json();
+        return response.json(); // Or response.text() if no JSON body on successful logout
     })
     .then(data => {
-         console.log('Logout successful:', data.message);
-         checkAuthStatus(); // Refresh auth status (will hide app section)
+        // console.log(data.message || 'Logout erfolgreich.'); // Optional: log success
+        checkAuthStatus(); // This will update UI to logged-out state
     })
     .catch(error => {
         console.error('Logout error:', error);
-        // Optionally inform the user about the logout error using showMessage
-        showMessage(null, 'Logout fehlgeschlagen. Bitte versuchen Sie es erneut.', true);
-        // Still try to refresh status, might partially work
-        checkAuthStatus();
+        alert(error.message || 'Logout fehlgeschlagen. Bitte versuchen Sie es erneut.');
+        clearAuthState(); // Ensure client state is cleared even if server call fails
     });
 }
-
-// --- Photo Management ---
-// Variables myPhotosGallery, globalPhotosGallery, uploadForm, photoInput, uploadMessage are already declared above
 
 // Function to handle photo upload
 function handleUpload(event) {
-    event.preventDefault(); // Prevent default form submission
-    uploadMessage.textContent = ''; // Clear previous messages
-    uploadMessage.className = 'message';
+    event.preventDefault();
+    if (!uploadMessage || !photoInput || !uploadForm) {
+         console.error("Upload form elements not found");
+         return;
+    }
+    showMessage(uploadMessage, '', false); // Clear previous messages
 
-    const photoFile = photoInput.files[0];
+    const photoFile = photoInput.files[0]; // photoInput is now global
+    const selectedAlbumId = albumSelectUpload ? albumSelectUpload.value : null; // albumSelectUpload is now global
+
     if (!photoFile) {
-        uploadMessage.textContent = 'Bitte wählen Sie eine Datei aus.';
-        uploadMessage.className = 'message error';
+        showMessage(uploadMessage, 'Bitte wählen Sie eine Datei aus.', true);
+        return;
+    }
+    
+    // Require an album to be selected for upload
+    if (!selectedAlbumId) {
+        showMessage(uploadMessage, 'Bitte wählen Sie ein Album für das Foto aus.', true);
         return;
     }
 
+    showMessage(uploadMessage, 'Lade Foto hoch...', false);
     const formData = new FormData();
-    formData.append('photo', photoFile); // 'photo' must match the name attribute in HTML and multer field name in server.js
-
-    uploadMessage.textContent = 'Lade Foto hoch...';
-    uploadMessage.className = 'message'; // Neutral message during upload
+    formData.append('photo', photoFile);
+    formData.append('album_id', selectedAlbumId); // Ensure album_id is appended
 
     fetch('/api/photos/upload', {
         method: 'POST',
-        body: formData // No 'Content-Type' header needed for FormData, browser sets it with boundary
-        // Headers like 'Authorization' are usually handled by cookies/sessions here
+        body: formData,
+        // Headers for FormData are set automatically by the browser, including Content-Type: multipart/form-data
     })
-    .then(async response => {
-        const data = await response.json(); // Try to parse JSON regardless of status
+    .then(async response => { // Make this async to await response.json() in case of error
+        const data = await response.json(); // Try to parse JSON regardless of response.ok
+        return { response, data }; // Pass both to the next .then()
+    })
+    .then(({response, data}) => { // Destructure to get response and data
         if (!response.ok) {
-            // Handle specific errors like 401 Unauthorized
-            if (response.status === 401) {
-                throw new Error('Nicht autorisiert. Bitte erneut einloggen.');
-            }
-            // Throw an error with the message from the server
-            throw new Error(data.message || `Upload fehlgeschlagen: ${response.statusText}`);
+            // data.message should now contain "Album-ID ist erforderlich." or other server messages
+            throw new Error(data.message || 'Upload fehlgeschlagen.');
         }
-        return data; // Return data on success
-    })
-    .then(data => {
-        uploadMessage.textContent = 'Foto erfolgreich hochgeladen!';
-        uploadMessage.className = 'message success';
-        uploadForm.reset(); // Clear the form
-        loadMyPhotos(false); // Reload the user's photo gallery
-        loadAllPhotos(); // Reload the 'all photos' gallery
+        showMessage(uploadMessage, 'Foto erfolgreich hochgeladen!', false);
+        if (uploadForm) uploadForm.reset(); // uploadForm is now global
+        
+        // Refresh relevant photo lists
+        if (typeof loadMyPhotos === 'function') loadMyPhotos(false);
+        if (typeof loadAllPhotos === 'function') loadAllPhotos();
+        // If uploading to a specific album, you might want to refresh that album's view too
+        if (selectedAlbumId && typeof loadPhotosForAlbum === 'function') loadPhotosForAlbum(selectedAlbumId);
+
     })
     .catch(error => {
-        uploadMessage.textContent = `Fehler: ${error.message}`;
-        uploadMessage.className = 'message error';
         console.error('Upload error:', error);
-         // If unauthorized, redirect to login might be desired, or just show message
-        if (error.message.includes('Nicht autorisiert')) {
-             // Optional: Force a refresh of auth status to show login form
-             checkAuthStatus();
-        }
+        showMessage(uploadMessage, `Fehler: ${error.message}`, true);
     });
 }
 
-
-// Function to load user's photos or all photos
-async function loadMyPhotos(getAll = false) {
-    const targetGallery = getAll ? globalPhotosGallery : myPhotosGallery;
-    const endpoint = getAll ? '/api/photos/all' : '/api/photos/my';
-
-    if (!targetGallery) {
-        console.error(`Gallery element not found for getAll=${getAll}`);
+// --- Album Functions ---
+async function handleCreateAlbum(event) {
+    event.preventDefault();
+    if (!albumMessage || !albumNameInput || !createAlbumForm) {
+        console.error("Album creation form elements not found");
         return;
     }
-    targetGallery.innerHTML = '<p>Lade Fotos...</p>';
+    showMessage(albumMessage, '', false); // Clear previous messages
+
+    const albumName = albumNameInput.value.trim(); // albumNameInput is now global
+    if (!albumName) {
+        showMessage(albumMessage, 'Albumname ist erforderlich.', true);
+        return;
+    }
+    showMessage(albumMessage, 'Erstelle Album...', false);
 
     try {
-        const response = await fetch(endpoint);
+        const response = await fetch('/api/albums', { // Ensure this endpoint exists
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: albumName }),
+        });
+
+        const result = await response.json();
+
         if (!response.ok) {
-            let errorMsg = `HTTP error! status: ${response.status}`;
-            try {
-                const errorData = await response.json();
-                errorMsg = errorData.message || errorMsg;
-            } catch (e) { /* Ignore if response is not JSON */ }
-            throw new Error(errorMsg);
+            throw new Error(result.message || `Fehler beim Erstellen des Albums: ${response.statusText}`);
         }
-        const photos = await response.json();
-        targetGallery.innerHTML = '';
 
-        if (photos.length === 0) {
-            targetGallery.innerHTML = getAll
-                ? '<p>No photos have been uploaded by anyone yet.</p>'
-                : '<p>You have not uploaded any photos yet.</p>';
-        } else {
-            photos.forEach(photo => {
-                const container = document.createElement('div');
-                container.classList.add('photo-container');
-                // No longer need photoId for client-side delete button
-                // container.dataset.photoId = photo.id;
+        showMessage(albumMessage, 'Album erfolgreich erstellt!', false);
+        if (createAlbumForm) createAlbumForm.reset(); // createAlbumForm is now global
+        loadAlbums(); // Reload albums list
+    } catch (error) {
+        console.error('Fehler beim Erstellen des Albums:', error);
+        showMessage(albumMessage, error.message || 'Ein Fehler ist aufgetreten.', true);
+    }
+}
 
-                const link = document.createElement('a');
-                link.href = `/uploads/${photo.filename}`;
-                link.dataset.lightbox = getAll ? "all-photos-gallery" : "my-photos-gallery";
+// --- Stub Functions - Implement these ---
 
-                const altText = getAll && photo.username ? `Photo by ${photo.username}` : `Photo ID ${photo.id}`;
-                link.dataset.title = getAll && photo.username ? `Photo by ${photo.username} (ID: ${photo.id})` : `My Photo (ID: ${photo.id})`;
+// Hilfsfunktion zum Rendern von Fotos in einem Galerie-Element
+function renderPhotos(galleryElement, photos, placeholderMessage = 'Keine Fotos gefunden.') {
+    if (!galleryElement) return;
+    galleryElement.innerHTML = ''; // Vorherige Fotos löschen
 
-                const img = document.createElement('img');
-                img.src = `/uploads/${photo.filename}`;
-                img.alt = altText;
+    if (photos && photos.length > 0) {
+        photos.forEach(photo => {
+            const photoContainer = document.createElement('div');
+            photoContainer.classList.add('photo-item'); // Für späteres Styling
 
-                img.onerror = () => {
-                    console.error(`Failed to load image: /uploads/${photo.filename}. Removing container.`);
-                    container.remove();
-                };
+            const img = document.createElement('img');
+            // Annahme: Fotos sind im Ordner /uploads/ und der Dateiname ist in photo.filename gespeichert
+            img.src = `/uploads/${photo.filename}`; 
+            img.alt = photo.filename;
+            img.style.maxWidth = '200px'; // Einfaches Styling
+            img.style.maxHeight = '200px';
+            img.style.margin = '5px';
 
-                link.appendChild(img);
+            // Optional: Weitere Infos zum Foto anzeigen
+            // const photoInfo = document.createElement('p');
+            // photoInfo.textContent = `ID: ${photo.id}`;
+            // photoContainer.appendChild(photoInfo);
 
-                // REMOVE OVERLAY AND DELETE BUTTON CREATION
-                // const overlay = document.createElement('div');
-                // overlay.classList.add('photo-overlay');
-                // if (!getAll) {
-                //     const deleteButton = document.createElement('button');
-                //     deleteButton.classList.add('delete-button');
-                //     deleteButton.textContent = 'Delete';
-                //     deleteButton.setAttribute('aria-label', `Delete photo ${photo.id}`);
-                //     overlay.appendChild(deleteButton);
-                // } else {
-                //     if (photo.username) {
-                //         const usernameSpan = document.createElement('span');
-                //         usernameSpan.textContent = `By: ${photo.username}`;
-                //         usernameSpan.style.color = 'white';
-                //         usernameSpan.style.fontSize = '0.8em';
-                //         overlay.appendChild(usernameSpan);
-                //     }
-                // }
+            photoContainer.appendChild(img);
+            galleryElement.appendChild(photoContainer);
+        });
+    } else {
+        galleryElement.innerHTML = `<p>${placeholderMessage}</p>`;
+    }
+}
 
-                container.appendChild(link);
-                // container.appendChild(overlay); // REMOVE THIS LINE
-                targetGallery.appendChild(container);
+
+async function loadAlbums() {
+    if (!albumsListDiv || !albumSelectUpload) {
+        console.warn('Album list or select upload element not found.');
+        return;
+    }
+
+    albumsListDiv.innerHTML = '<p>Lade Alben...</p>';
+    // Standardoption im Upload-Select beibehalten und nur die Album-Optionen löschen
+    const firstOption = albumSelectUpload.options[0];
+    albumSelectUpload.innerHTML = '';
+    albumSelectUpload.appendChild(firstOption);
+
+
+    try {
+        const response = await fetch('/api/albums'); // Annahme: API-Endpunkt für Alben des Benutzers
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Fehler beim Laden der Alben.' }));
+            throw new Error(errorData.message || `Fehler: ${response.status}`);
+        }
+        const albums = await response.json();
+
+        albumsListDiv.innerHTML = ''; // Vorherige Liste leeren
+
+        if (albums && albums.length > 0) {
+            albums.forEach(album => {
+                // Album zur Liste hinzufügen
+                const albumElement = document.createElement('div');
+                albumElement.classList.add('album-item'); // Für Styling
+                albumElement.textContent = album.name;
+                albumElement.style.cursor = 'pointer';
+                albumElement.style.padding = '5px';
+                albumElement.style.borderBottom = '1px solid #eee';
+
+                albumElement.addEventListener('click', () => {
+                    if (currentAlbumTitle) currentAlbumTitle.textContent = `Fotos im Album: ${album.name}`;
+                    loadPhotosForAlbum(album.id);
+                });
+                albumsListDiv.appendChild(albumElement);
+
+                // Album zum Upload-Select hinzufügen
+                const option = document.createElement('option');
+                option.value = album.id;
+                option.textContent = album.name;
+                albumSelectUpload.appendChild(option);
             });
+        } else {
+            albumsListDiv.innerHTML = '<p>Noch keine Alben erstellt.</p>';
         }
     } catch (error) {
-        console.error(`Error loading photos (getAll=${getAll}):`, error);
-        targetGallery.innerHTML = `<p style="color: red;">Fehler beim Laden der Fotos: ${error.message}.</p>`;
+        console.error('Fehler beim Laden der Alben:', error);
+        albumsListDiv.innerHTML = `<p>${error.message || 'Ein Fehler ist beim Laden der Alben aufgetreten.'}</p>`;
     }
 }
 
-// REMOVE OR SIMPLIFY handleImageClick as delete button is gone
-// Clicks on images within <a> tags with data-lightbox will be handled by Lightbox2.
-// function handleImageClick(event) {
-//     const target = event.target;
-//     if (target.classList.contains('delete-button')) {
-//         // This logic is no longer needed
-//     }
-// }
-
-// Function to delete a photo (KEEP THIS if you plan to add delete functionality back later,
-// but it won't be called from the UI for now)
-async function deletePhoto(photoId) {
-    const response = await fetch(`/api/photos/${photoId}`, {
-        method: 'DELETE'
-    });
-
-    const result = await response.json(); // Always try to parse JSON
-
-    if (!response.ok) {
-        // Throw error using server message if available
-        throw new Error(result.message || `Delete failed with status: ${response.status}`);
+async function loadMyPhotos(forceRefresh = false) {
+    if (!myPhotosGallery) {
+        console.warn('My photos gallery element (#photo-gallery) not found.');
+        return;
     }
+    myPhotosGallery.innerHTML = '<p>Lade meine Fotos...</p>';
 
-    alert(result.message || "Foto erfolgreich gelöscht."); // Show success message
-    photoContainer.remove(); // Remove the photo element
+    try {
+        const response = await fetch('/api/photos/mine'); // API endpoint for user's photos
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Fehler beim Laden meiner Fotos.' }));
+            throw new Error(errorData.message || `Fehler: ${response.status}`);
+        }
+        const photos = await response.json();
+        renderPhotos(myPhotosGallery, photos, 'Du hast noch keine Fotos hochgeladen.');
 
-    // Check if gallery is empty and show message
-    if (myPhotosGallery.children.length === 0) {
-        myPhotosGallery.innerHTML = '<p>You have not uploaded any photos yet.</p>';
+    } catch (error) {
+        console.error('Fehler beim Laden meiner Fotos:', error);
+        myPhotosGallery.innerHTML = `<p>${error.message || 'Ein Fehler ist beim Laden meiner Fotos aufgetreten.'}</p>`;
     }
 }
 
+async function loadAllPhotos() {
+    if (!globalPhotosGallery) {
+        console.warn('Global photos gallery element (#photo-gallery-all) not found.');
+        return;
+    }
+    globalPhotosGallery.innerHTML = '<p>Lade alle Fotos...</p>';
+
+    try {
+        const response = await fetch('/api/photos/all'); // API endpoint for all photos
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Fehler beim Laden aller Fotos.' }));
+            throw new Error(errorData.message || `Fehler: ${response.status}`);
+        }
+        const photos = await response.json();
+        renderPhotos(globalPhotosGallery, photos, 'Es sind noch keine Fotos vorhanden.');
+
+    } catch (error) {
+        console.error('Fehler beim Laden aller Fotos:', error);
+        globalPhotosGallery.innerHTML = `<p>${error.message || 'Ein Fehler ist beim Laden aller Fotos aufgetreten.'}</p>`;
+    }
+}
+
+// Funktion zum Laden von Fotos für ein spezifisches Album
+async function loadPhotosForAlbum(albumId) {
+    if (!albumPhotoGalleryDiv || !currentAlbumTitle) {
+        console.warn('Album photo gallery or current album title element not found.');
+        return;
+    }
+    // Titel wird bereits beim Klick in loadAlbums gesetzt, hier nur Ladezustand
+    albumPhotoGalleryDiv.innerHTML = '<p>Lade Fotos für das ausgewählte Album...</p>';
+
+    try {
+        const response = await fetch(`/api/albums/${albumId}/photos`); // Annahme: API-Endpunkt
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Fehler beim Laden der Fotos für das Album.' }));
+            throw new Error(errorData.message || `Fehler: ${response.status}`);
+        }
+        const photos = await response.json();
+        renderPhotos(albumPhotoGalleryDiv, photos, 'Keine Fotos in diesem Album gefunden.');
+
+    } catch (error) {
+        console.error(`Fehler beim Laden der Fotos für Album ${albumId}:`, error);
+        if (currentAlbumTitle) currentAlbumTitle.textContent = 'Fotos im ausgewählten Album'; // Titel zurücksetzen bei Fehler
+        albumPhotoGalleryDiv.innerHTML = `<p>${error.message || 'Ein Fehler ist beim Laden der Fotos aufgetreten.'}</p>`;
+    }
+}

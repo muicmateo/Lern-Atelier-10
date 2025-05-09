@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foto-Sharing App</title>
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Lightbox2 CSS - use relative path (KEEP THIS ONE) -->
+    <!-- Lightbox2 CSS - Single Import -->
     <link href="/node_modules/lightbox2/dist/css/lightbox.min.css" rel="stylesheet">
 </head>
 <body>
@@ -50,12 +49,12 @@
 
         <h2>Foto hochladen</h2>
         <form id="upload-form">
-            <input type="file" id="photo-input" name="photo" accept="image/*" required><br>
-            <label for="album-select-upload">In Album hochladen:</label>
-            <select id="album-select-upload" name="album_id" required>
-                <option value="">-- Album auswählen --</option>
+            <label for="album-select-upload">In Album hochladen (optional):</label>
+            <select id="album-select-upload" name="albumId">
+                <option value="">-- Kein Album / Allgemein --</option>
                 <!-- Album-Optionen werden hier per JS geladen -->
             </select><br>
+            <input type="file" id="photo-input" name="photo" accept="image/*" required><br>
             <button type="submit">Hochladen</button>
         </form>
         <p id="upload-message" class="message"></p>
@@ -64,13 +63,13 @@
 
         <h2>Meine Alben</h2>
         <div id="albums-list">
-            <!-- Alben werden hier geladen -->
+            <!-- Albumliste wird hier geladen -->
             <p>Lade Alben...</p>
         </div>
 
         <hr>
         
-        <h2 id="current-album-title">Fotos im ausgewählten Album</h2>
+        <h3 id="current-album-title">Fotos im ausgewählten Album</h3>
         <div id="album-photo-gallery">
             <!-- Fotos des ausgewählten Albums werden hier geladen -->
             <p>Bitte ein Album auswählen, um Fotos anzuzeigen.</p>
@@ -78,29 +77,23 @@
 
         <hr>
 
-        <h2>Meine Fotos (Alle)</h2> <!-- This can show all photos across all user's albums -->
+        <h2>Meine Fotos (alle)</h2>
         <div id="photo-gallery">
             <!-- Fotos werden hier geladen -->
             <p>Lade Fotos...</p>
         </div>
 
-
-        <h2>All Fotos (Global)</h2> <!-- This shows photos from all users, consider privacy implications -->
+        <h2>Alle Fotos</h2>
         <div id="photo-gallery-all">
             <!-- Fotos werden hier geladen -->
             <p>Lade Fotos...</p>
         </div>
     </div>
 
-    <!-- REMOVE THIS DUPLICATE Lightbox2 CSS LINK -->
-    <!-- <link href="/node_modules/lightbox2/dist/css/lightbox.min.css" rel="stylesheet" /> -->
+    <!-- Lightbox2 JS - Single Import -->
+    <script src="/node_modules/lightbox2/dist/js/lightbox.min.js"></script>
 
-    <!-- Lightbox2 JS - use relative path and only include ONCE -->
-    <script src="/node_modules/lightbox2/dist/js/lightbox-plus-jquery.min.js"></script>
-    
     <!-- Your script -->
     <script src="script.js"></script>
-
-    <!-- Ensure NO custom gallery script here -->
 </body>
 </html>

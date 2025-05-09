@@ -66,7 +66,10 @@ app.use(session({
         dir: __dirname, // Verzeichnis der Datenbankdatei
         table: 'sessions' // Name der Session-Tabelle
     }),
-    secret: process.env.SESSION_SECRET || 'replace_this_with_a_very_strong_random_secret_key_at_least_32_chars_long', // WICHTIG: Ändere dies in einen starken, geheimen Schlüssel!
+    // IMPORTANT: Replace this placeholder with a strong, unique, random secret key!
+    // Generate a good one using a password manager or a random string generator.
+    // For example: require('crypto').randomBytes(64).toString('hex')
+    secret: process.env.SESSION_SECRET || 'YOUR_VERY_STRONG_RANDOM_SECRET_KEY_HERE_MIN_32_CHARS', // WICHTIG: Ändere dies in einen starken, geheimen Schlüssel!
     resave: false, // Don't save session if unmodified
     saveUninitialized: false, // Don't create session until something stored
     cookie: {
@@ -125,13 +128,16 @@ app.post('/api/auth/register', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Fehler beim Passwort-Hashing:', error);
-        res.status(500).json({ message: 'Interner Serverfehler.' });
+        // The logged error "Fehler beim Passwort-Hashing: TypeError: db.run is not a function"
+        // indicates that 'error' IS the TypeError from db.run.
+        // The console message here should be more general or specific to DB issues.
+        console.error('Fehler im Registrierungsprozess:', error); // More accurate error message
+        res.status(500).json({ message: 'Interner Serverfehler bei der Verarbeitung der Registrierung.' });
     }
 });
 
-// Login (POST /api/auth/login)
-app.post('/api/auth/login', async (req, res) => {
+// Login (POST /api/auth/login', (req, res) => {
+app.post('/api/auth/login', (req, res) => {
     const { usernameOrEmail, password } = req.body;
 
     if (!usernameOrEmail || !password) {
@@ -139,7 +145,16 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     try {
-        const sql = 'SELECT * FROM users WHERE username = ? OR email = ?';
+        // Add this log to inspect 'db'
+        console.log('Inspecting db in /api/auth/login:', typeof db, db);
+
+        // Explicitly check if db and db.get are valid
+        if (!db || typeof db.get !== 'function') {
+            console.error('Datenbankobjekt (db) ist nicht korrekt initialisiert oder db.get ist keine Funktion. Überprüfen Sie database.js.');
+            return res.status(500).json({ message: 'Interner Serverfehler: Datenbankverbindungsproblem.' });
+        }
+
+        const sql = `SELECT * FROM users WHERE username = ? OR email = ?`;
         db.get(sql, [usernameOrEmail, usernameOrEmail], async (err, user) => {
             if (err) {
                 console.error('Datenbankfehler beim Login:', err.message);
@@ -149,10 +164,8 @@ app.post('/api/auth/login', async (req, res) => {
                 return res.status(401).json({ message: 'Ungültige Anmeldedaten.' });
             }
 
-            // Passwort vergleichen
             const match = await bcrypt.compare(password, user.password_hash);
             if (match) {
-                // Session erstellen
                 req.session.userId = user.id;
                 req.session.username = user.username;
                 return res.json({ message: 'Login erfolgreich.', user: { id: user.id, username: user.username } });
@@ -162,7 +175,7 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Fehler beim Login:', error.message);
-        return res.status(500).json({ message: 'Ein interner Serverfehler ist aufgetreten.' });
+        return res.status(500).json({ message: 'Ein Fehler ist aufgetreten.' });
     }
 });
 
@@ -291,57 +304,50 @@ app.get('/api/albums/:albumId/photos', isAuthenticated, async (req, res) => {
 // --- Foto-Routen ---
 
 // Foto hochladen (POST /api/photos/upload) - jetzt mit album_id
-app.post('/api/photos/upload', isAuthenticated, upload.single('photo'), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ message: 'Keine Datei hochgeladen.' });
-    }
-    
-    const { album_id } = req.body; // Album-ID aus dem Request-Body holen
+app.post('/api/photos/upload', isAuthenticated, upload.single('photo'), (req, res) => {
     const userId = req.session.userId;
+    
+    if (!req.file) {
+        return res.status(400).json({ message: 'Keine Fotodatei empfangen.' });
+    }
     const filename = req.file.filename;
+    const filepath = req.file.path; // Get the full path of the uploaded file
+    const albumId = req.body.album_id; // album_id from FormData
 
-    if (!album_id) {
-        // Lösche die hochgeladene Datei, wenn keine Album-ID angegeben wurde, um verwaiste Dateien zu vermeiden
-        fs.unlink(path.join(uploadsDir, filename), (err) => {
-            if (err) console.error("Fehler beim Löschen der Datei nach fehlender album_id:", err);
-        });
+    if (!albumId) {
+        // This is likely where your "Album-ID ist erforderlich." error originates
         return res.status(400).json({ message: 'Album-ID ist erforderlich.' });
     }
-    
-    // Überprüfen, ob das Album dem Benutzer gehört
-    const albumCheckSql = 'SELECT id FROM albums WHERE id = ? AND user_id = ?';
-    db.get(albumCheckSql, [album_id, userId], (err, album) => {
-        if (err) {
-            console.error('Fehler beim Überprüfen des Albums vor dem Hochladen:', err.message);
-            fs.unlink(path.join(uploadsDir, filename), (unlinkErr) => { if (unlinkErr) console.error("Fehler beim Löschen der Datei nach DB-Fehler:", unlinkErr); });
-            return res.status(500).json({ message: 'Fehler beim Hochladen des Fotos.' });
-        }
-        if (!album) {
-            fs.unlink(path.join(uploadsDir, filename), (unlinkErr) => { if (unlinkErr) console.error("Fehler beim Löschen der Datei nach ungültigem Album:", unlinkErr); });
-            return res.status(403).json({ message: 'Zugriff auf das Album verweigert oder Album nicht gefunden.' });
-        }
 
-        // Album gehört dem Benutzer, Foto in DB speichern
-        const sql = 'INSERT INTO photos (filename, user_id, album_id) VALUES (?, ?, ?)';
-        db.run(sql, [filename, userId, album_id], function(err) {
-            if (err) {
-                console.error('Fehler beim Speichern des Fotos in der DB:', err.message);
-                // Lösche die hochgeladene Datei bei DB-Fehler
-                fs.unlink(path.join(uploadsDir, filename), (unlinkErr) => {
-                    if (unlinkErr) console.error("Fehler beim Löschen der Datei nach DB-Insert-Fehler:", unlinkErr);
-                });
-                return res.status(500).json({ message: 'Foto konnte nicht in der Datenbank gespeichert werden.' });
-            }
-            res.status(201).json({ message: 'Foto erfolgreich hochgeladen.', photo: { id: this.lastID, filename, user_id: userId, album_id } });
-        });
+    // Ensure your database schema (photoshare.db) actually has a filepath column.
+    // If it does, and it's NOT NULL, this INSERT will work.
+    // If database.js is the source of truth and it doesn't have filepath,
+    // then the database schema needs to be aligned with database.js.
+    const sql = 'INSERT INTO photos (filename, user_id, album_id, filepath) VALUES (?, ?, ?, ?)';
+    db.run(sql, [filename, userId, albumId, filepath], function(err) {
+        if (err) {
+            console.error('Datenbankfehler beim Speichern des Fotos:', err.message);
+            return res.status(500).json({ message: 'Fehler beim Speichern des Fotos.' });
+        }
+        res.status(201).json({ message: 'Foto erfolgreich hochgeladen.', photoId: this.lastID, filename: filename });
     });
 });
 
-// Alle eigenen Fotos des Benutzers abrufen (GET /api/photos/my)
-// Diese Route könnte nun alle Fotos des Benutzers über alle seine Alben hinweg zurückgeben
-// oder spezifischer sein, je nach Anforderung.
-// Fürs Erste lassen wir sie so, dass sie alle Fotos des Benutzers zurückgibt.
-// Die clientseitige Logik muss dann entscheiden, wie sie diese anzeigt (z.B. gruppiert nach Album).
+// GET all photos for the logged-in user
+app.get('/api/photos/mine', isAuthenticated, (req, res) => {
+    const userId = req.session.userId;
+    const sql = "SELECT id, filename, user_id, album_id, created_at FROM photos WHERE user_id = ? ORDER BY created_at DESC";
+    
+    db.all(sql, [userId], (err, rows) => {
+        if (err) {
+            console.error('Datenbankfehler beim Abrufen meiner Fotos:', err.message); // This error
+            return res.status(500).json({ message: 'Fehler beim Abrufen der Fotos des Benutzers.' });
+        }
+        res.json(rows);
+    });
+});
+
+
 app.get('/api/photos/my', isAuthenticated, (req, res) => {
     const userId = req.session.userId;
     // SQL-Query, um Fotos zusammen mit Album-Namen und Benutzernamen abzurufen
@@ -363,32 +369,32 @@ app.get('/api/photos/my', isAuthenticated, (req, res) => {
 });
 
 
-// Alle Fotos von allen Benutzern abrufen (GET /api/photos/all)
-// ACHTUNG: Diese Route gibt ALLE Fotos von ALLEN Benutzern zurück.
-// In einer echten Anwendung benötigen Sie hier möglicherweise eine Paginierung und/oder
-// eine Unterscheidung zwischen öffentlichen und privaten Alben/Fotos.
-// Für dieses Projekt könnte es sinnvoll sein, nur Fotos aus Alben anzuzeigen,
-// die als "öffentlich" markiert sind (erfordert Schemaänderung) oder
-// die Logik hier anzupassen, um die Privatsphäre zu wahren.
-// Vorerst: Gibt alle Fotos mit User- und Albuminformationen zurück.
-app.get('/api/photos/all', isAuthenticated, (req, res) => { // isAuthenticated hier, um Kontext zu haben, wer anfragt
+// GET all photos (adjust for privacy/pagination as needed)
+app.get('/api/photos/all', isAuthenticated, (req, res) => { 
+    // isAuthenticated ensures only logged-in users can see this list for now
     const sql = `
-        SELECT p.id, p.filename, p.user_id, p.album_id, p.created_at, u.username, a.name as album_name
+        SELECT 
+            p.id, 
+            p.filename, 
+            p.user_id, 
+            u.username AS owner_username, 
+            p.album_id, 
+            a.name AS album_name, 
+            p.created_at 
         FROM photos p
         JOIN users u ON p.user_id = u.id
         JOIN albums a ON p.album_id = a.id
         ORDER BY p.created_at DESC
     `;
-    // Optional: Fügen Sie ein LIMIT hinzu, um die Anzahl der Ergebnisse zu begrenzen, z.B. LIMIT 50
+    
     db.all(sql, [], (err, rows) => {
         if (err) {
-            console.error('Fehler beim Abrufen aller Fotos:', err.message);
+            console.error('Datenbankfehler beim Abrufen aller Fotos:', err.message); // This error
             return res.status(500).json({ message: 'Fehler beim Abrufen aller Fotos.' });
         }
         res.json(rows);
     });
 });
-
 
 // Foto löschen (DELETE /api/photos/:photoId)
 app.delete('/api/photos/:photoId', isAuthenticated, (req, res) => {

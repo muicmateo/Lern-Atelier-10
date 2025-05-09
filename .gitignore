@@ -13,7 +13,7 @@ pnpm-debug.log*
 
 # SQLite database session journal file
 # You might also want to ignore the main database file if it shouldn't be in version control
-# photoshare.db
+photoshare.db
 photoshare.db-journal
 
 # Uploaded files (user-generated content, usually not version controlled)
