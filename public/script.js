@@ -1,32 +1,64 @@
 document.addEventListener('DOMContentLoaded', function() {
     // --- DOM Elements ---
-    const authSection = document.getElementById('auth-section');
-    const appSection = document.getElementById('app-section');
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
-    const uploadForm = document.getElementById('upload-form');
-    const logoutButton = document.getElementById('logout-button');
+    const authSection = document.getElementById('auth-section');
+    const appSection = document.getElementById('app-section');
     const userGreeting = document.getElementById('user-greeting');
+    const logoutButton = document.getElementById('logout-button');
     const photoGallery = document.getElementById('photo-gallery');
-    const photoGalleryAll = document.getElementById('photo-gallery-all');
-    const photoInput = document.getElementById('photo-input'); // Make sure this is declared
+    const photoGalleryAll = document.getElementById('photo-gallery-all'); // Ensure this is defined if used
+    const uploadForm = document.getElementById('upload-form');
+    const photoInput = document.getElementById('photo-input'); 
 
     // --- Message elements ---
     const loginMessage = document.getElementById('login-message');
     const registerMessage = document.getElementById('register-message');
-    const uploadMessage = document.getElementById('upload-message'); // Ensure this is declared
-
-  
-    // Remove or comment out: captionText, prevBtn, nextBtn, galleryItems, currentIndex
+    const uploadMessage = document.getElementById('upload-message'); 
 
     // --- Event Listeners ---
-    loginForm.addEventListener('submit', handleLogin);
-    registerForm.addEventListener('submit', handleRegister);
-    uploadForm.addEventListener('submit', handleUpload); // This line expects a function named handleUpload
-    logoutButton.addEventListener('click', handleLogout);
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+    if (registerForm) registerForm.addEventListener('submit', handleRegister);
+    if (uploadForm) uploadForm.addEventListener('submit', handlePhotoUpload);
+    
+    if (logoutButton) {
+        logoutButton.addEventListener('click', handleLogout);
 
-    // Add delegated event listener for clicking images in BOTH galleries
-    document.body.addEventListener('click', handleImageClick); // Listen on body
+        // REMOVE keydown listener previously added for custom gallery
+        // logoutButton.addEventListener('keydown', function(event) {
+        //     if (event.key === 'Enter') {
+        //         const lightboxElement = document.getElementById('lightbox');
+        //         // Check if Lightbox is currently displayed
+        //         if (lightboxElement && lightboxElement.style.display === 'block') {
+        //             event.preventDefault(); 
+        //         }
+        //     }
+        // });
+    }
+    
+    // Modify to listen on a more specific parent if possible, or ensure Lightbox handles its own clicks.
+    // If Lightbox is correctly set up with <a> tags, this might not be strictly needed for opening images.
+    // document.body.addEventListener('click', handleImageClick); // We'll remove delete logic from here
+
+    // Add a global keydown listener to handle Enter key when Lightbox is active
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            // Check if Lightbox is currently active and visible
+            // Lightbox2 adds a div with id 'lightbox' and sets its display to 'block' when open
+            const lightboxOverlay = document.getElementById('lightboxOverlay'); // Lightbox background
+            const lightboxContainer = document.getElementById('lightbox');     // Lightbox main container
+
+            // Check if either the overlay or the main container is visible
+            const isLightboxVisible = (lightboxOverlay && getComputedStyle(lightboxOverlay).display !== 'none') ||
+                                      (lightboxContainer && getComputedStyle(lightboxContainer).display !== 'none');
+
+            if (isLightboxVisible) {
+                // If Lightbox is visible, prevent the default action of the Enter key.
+                // This stops it from "clicking" any focused button underneath (like logout).
+                event.preventDefault();
+            }
+        }
+    });
 
     // --- Functions ---
 
@@ -35,24 +67,23 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/api/users/me')
             .then(response => {
                 if (response.ok) return response.json();
-                userGreeting.textContent = '';
+                userGreeting.textContent = ''; // Clear greeting
                 throw new Error('Not authenticated');
             })
             .then(user => {
-                userGreeting.textContent = user.username;
+                userGreeting.textContent = user.username; // Set greeting
                 authSection.style.display = 'none';
                 appSection.style.display = 'block';
-                // Load photos without setupGalleryItems
+                // Load photos. Lightbox will use the <a> tags generated by loadMyPhotos.
                 Promise.all([loadMyPhotos(false), loadMyPhotos(true)]);
             })
             .catch(error => {
                 console.log('Authentication check failed:', error.message);
                 authSection.style.display = 'block';
                 appSection.style.display = 'none';
-                photoGallery.innerHTML = '';
+                photoGallery.innerHTML = ''; // Clear galleries
                 if (photoGalleryAll) photoGalleryAll.innerHTML = '';
-                // Remove this line as galleryItems is not defined
-                // galleryItems = []; 
+                // galleryItems = []; // Not needed
             });
     }
 
@@ -228,7 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(endpoint);
             if (!response.ok) {
-                // Try to get error message from server response
                 let errorMsg = `HTTP error! status: ${response.status}`;
                 try {
                     const errorData = await response.json();
@@ -237,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(errorMsg);
             }
             const photos = await response.json();
-            targetGallery.innerHTML = '';
+            targetGallery.innerHTML = ''; 
 
             if (photos.length === 0) {
                 targetGallery.innerHTML = getAll
@@ -247,50 +277,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 photos.forEach(photo => {
                     const container = document.createElement('div');
                     container.classList.add('photo-container');
-                    container.dataset.photoId = photo.id;
+                    // No longer need photoId for client-side delete button
+                    // container.dataset.photoId = photo.id; 
 
-                    // Create a link for Lightbox
                     const link = document.createElement('a');
-                    link.href = `/uploads/${photo.filename}`;
-                    link.dataset.lightbox = getAll ? "all-photos" : "my-photos"; // Group photos
+                    link.href = `/uploads/${photo.filename}`; 
+                    link.dataset.lightbox = getAll ? "all-photos-gallery" : "my-photos-gallery"; 
                     
                     const altText = getAll && photo.username ? `Photo by ${photo.username}` : `Photo ID ${photo.id}`;
-                    link.dataset.title = altText; // This becomes the caption in Lightbox
+                    link.dataset.title = getAll && photo.username ? `Photo by ${photo.username} (ID: ${photo.id})` : `My Photo (ID: ${photo.id})`;
 
                     const img = document.createElement('img');
-                    img.src = `/uploads/${photo.filename}`;
+                    img.src = `/uploads/${photo.filename}`; 
                     img.alt = altText;
 
                     img.onerror = () => {
                         console.error(`Failed to load image: /uploads/${photo.filename}. Removing container.`);
-                        container.remove();
+                        container.remove(); 
                     };
 
-                    // Add the image to the link
-                    link.appendChild(img);
+                    link.appendChild(img); 
 
-                    const overlay = document.createElement('div');
-                    overlay.classList.add('photo-overlay');
+                    // REMOVE OVERLAY AND DELETE BUTTON CREATION
+                    // const overlay = document.createElement('div');
+                    // overlay.classList.add('photo-overlay');
+                    // if (!getAll) { 
+                    //     const deleteButton = document.createElement('button');
+                    //     deleteButton.classList.add('delete-button');
+                    //     deleteButton.textContent = 'Delete';
+                    //     deleteButton.setAttribute('aria-label', `Delete photo ${photo.id}`);
+                    //     overlay.appendChild(deleteButton);
+                    // } else {
+                    //     if (photo.username) {
+                    //         const usernameSpan = document.createElement('span');
+                    //         usernameSpan.textContent = `By: ${photo.username}`;
+                    //         usernameSpan.style.color = 'white'; 
+                    //         usernameSpan.style.fontSize = '0.8em';
+                    //         overlay.appendChild(usernameSpan);
+                    //     }
+                    // }
 
-                    if (!getAll) {
-                        const deleteButton = document.createElement('button');
-                        deleteButton.classList.add('delete-button');
-                        deleteButton.textContent = 'Delete';
-                        deleteButton.setAttribute('aria-label', `Delete photo ${photo.id}`);
-                        overlay.appendChild(deleteButton);
-                    } else {
-                        if (photo.username) {
-                            const usernameSpan = document.createElement('span');
-                            usernameSpan.textContent = `By: ${photo.username}`;
-                            usernameSpan.style.color = 'white';
-                            usernameSpan.style.fontSize = '0.8em';
-                            overlay.appendChild(usernameSpan);
-                        }
-                    }
-
-                    container.appendChild(link);
-                    container.appendChild(overlay);
-                    targetGallery.appendChild(container);
+                    container.appendChild(link); 
+                    // container.appendChild(overlay); // REMOVE THIS LINE
+                    targetGallery.appendChild(container); 
                 });
             }
         } catch (error) {
@@ -299,81 +328,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Event listener for photo uploads (Async version - KEEP THIS ONE)
-    uploadForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        uploadMessage.textContent = 'Uploading...'; // Provide feedback during upload
-        uploadMessage.className = 'message';
+    // REMOVE OR SIMPLIFY handleImageClick as delete button is gone
+    // Clicks on images within <a> tags with data-lightbox will be handled by Lightbox2.
+    // function handleImageClick(event) {
+    //     const target = event.target;
+    //     if (target.classList.contains('delete-button')) {
+    //         // This logic is no longer needed
+    //     }
+    // }
 
-        if (!photoInput.files || photoInput.files.length === 0) {
-             uploadMessage.textContent = 'Bitte wählen Sie eine Datei aus.';
-             uploadMessage.className = 'message error';
-             return;
+    // Function to delete a photo (KEEP THIS if you plan to add delete functionality back later,
+    // but it won't be called from the UI for now)
+    async function deletePhoto(photoId) {
+        const response = await fetch(`/api/photos/${photoId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json(); // Always try to parse JSON
+
+        if (!response.ok) {
+            // Throw error using server message if available
+            throw new Error(result.message || `Delete failed with status: ${response.status}`);
         }
 
-        const formData = new FormData();
-        formData.append('photo', photoInput.files[0]);
+        alert(result.message || "Foto erfolgreich gelöscht."); // Show success message
+        photoContainer.remove(); // Remove the photo element
 
-        try {
-            const response = await fetch('/api/photos/upload', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json(); // Always try to parse JSON
-
-            if (!response.ok) {
-                 // Throw error using server message if available
-                 throw new Error(result.message || `Upload failed with status: ${response.status}`);
-            }
-
-            uploadMessage.textContent = result.message || 'Foto erfolgreich hochgeladen!';
-            uploadMessage.className = 'message success';
-            uploadForm.reset(); // Clear the form
-            loadMyPhotos(); // Reload photos to show the new one
-
-        } catch (error) {
-            console.error('Error uploading photo:', error);
-            uploadMessage.textContent = error.message || 'Upload fehlgeschlagen. Bitte versuchen Sie es erneut.';
-            uploadMessage.className = 'message error';
+        // Check if gallery is empty and show message
+        if (photoGallery.children.length === 0) {
+             photoGallery.innerHTML = '<p>You have not uploaded any photos yet.</p>';
         }
-    });
-
-    // Event listener for photo deletions
-    photoGallery.addEventListener('click', async (event) => {
-        if (event.target.classList.contains('delete-button')) {
-            const photoContainer = event.target.closest('.photo-container');
-            if (photoContainer) {
-                const photoId = photoContainer.dataset.photoId;
-                if (photoId && confirm(`Sind Sie sicher, dass Sie dieses Foto löschen möchten?`)) { // Confirmation in German
-                    try {
-                        const response = await fetch(`/api/photos/${photoId}`, {
-                            method: 'DELETE'
-                        });
-
-                        const result = await response.json(); // Always try to parse JSON
-
-                        if (!response.ok) {
-                            // Throw error using server message if available
-                            throw new Error(result.message || `Delete failed with status: ${response.status}`);
-                        }
-
-                        alert(result.message || "Foto erfolgreich gelöscht."); // Show success message
-                        photoContainer.remove(); // Remove the photo element
-
-                        // Check if gallery is empty and show message
-                        if (photoGallery.children.length === 0) {
-                             photoGallery.innerHTML = '<p>You have not uploaded any photos yet.</p>';
-                        }
-                    } catch (error) {
-                        console.error('Error deleting photo:', error);
-                        alert(`Fehler beim Löschen des Fotos: ${error.message}`); // Show specific error
-                    }
-                }
-            }
-        }
-    });
+    }
 
 
     // --- Initial Check ---
-    checkAuthStatus();
+    checkAuthStatus(); 
 }); // End of DOMContentLoaded
