@@ -46,7 +46,7 @@ Diese Kern-Funktionalitäten brechen Sie nun in etwa 4 AP je herunter. Versuchen
 
 - [ ] Frontend design implementieren
 - [ ] Albums hinzufügen
-- [ ] Fullscreen Fotos mit click
+- [x] Fullscreen Fotos mit click
 
 ✍️ Heute habe ich... (50-100 Wörter)
 
