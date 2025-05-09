@@ -32,23 +32,21 @@ Ausgehend von Ihren Erfahrungen vom 25.4, welche *features* brauchen noch mehr R
 - [ ] Zoom auf Fotos mit click  
 - [ ] nach wichtigen Aktionen (wie Login, Registrierung, Foto-Upload) kurze, klare Nachrichten direkt auf der Webseite anzeigen
 
-✍️ Heute habe ich... (50-100 Wörter)
-
-☝️ Vergessen Sie nicht, den Code von heute auf github hochzuladen.
+✍️ Heute habe am anfang bemerkt das ein User nur seine eigene fotos sehen kann und nicht von allen. Also habe ich das implementiert, obwohl es kein Arbeitspaket war. Als nächstes machte ich einen Mockup für Frontend, den ich dann nächste woche anfange zu implementieren. Eine Löschfunktion habe ich auch hinzugefügt. Ein User kann nur seine Fotos löschen. Als letztes habe ich probiert eine Fullscreen funktion hinzufügen aber mit dem hatte ich mühe. Diesen Arbeitspaket verschiebe ich auf die nächste Woche.
 
 ## 9.5
 
 Planen Sie nun Ihr Projekt, sodass die *Kern-Funktionalität* in 3 Sitzungen realisiert ist. Schreiben Sie dazu zunächst 3 solche übergeordneten Kern-Funktionalitäten auf: 
 
-1. Kern-Funktionalität
-2. Kern-Funktionalität
-3. Kern-Funktionalität
+1. Kern-Funktionalität: Albums
+2. Kern-Funktionalität: Groups (Groups sind sammlung von Usern die verschiedene Albums erstellen)
+3. Kern-Funktionalität: Users zu Groups inviten (nach users suchen mit ID?)
 
 Diese Kern-Funktionalitäten brechen Sie nun in etwa 4 AP je herunter. Versuchen Sie jetzt bereits, auch die Sitzung vom 16.5 und 23.5 zu planen (im Wissen, dass Sie kleine Anpassungen an Ihrer Planung vornehmen können).
 
-- [ ] ...
-- [ ] ...
-- [ ] ...
+- [ ] Frontend design implementieren
+- [ ] Albums hinzufügen
+- [ ] Fullscreen Fotos mit click
 
 ✍️ Heute habe ich... (50-100 Wörter)
 
