@@ -8,7 +8,7 @@ const multer = require('multer'); // Importiere multer
 const fs = require('fs'); // Filesystem-Modul für Ordnererstellung
 
 const app = express();
-const port = 3500;
+const port = process.env.PORT || 3500; // Use environment variable for port
 
 // Stelle sicher, dass der Uploads-Ordner existiert
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -66,7 +66,7 @@ app.use(session({
         dir: __dirname, // Verzeichnis der Datenbankdatei
         table: 'sessions' // Name der Session-Tabelle
     }),
-    secret: 'your_secret_key', // WICHTIG: Ändere dies in einen starken, geheimen Schlüssel!
+    secret: process.env.SESSION_SECRET || 'replace_this_with_a_very_strong_random_secret_key_at_least_32_chars_long', // WICHTIG: Ändere dies in einen starken, geheimen Schlüssel!
     resave: false, // Don't save session if unmodified
     saveUninitialized: false, // Don't create session until something stored
     cookie: {
@@ -88,6 +88,7 @@ const isAuthenticated = (req, res, next) => {
         return next();
     } else {
         // Benutzer ist nicht eingeloggt
+        // Send a 401 Unauthorized status
         return res.status(401).json({ message: 'Nicht autorisiert. Bitte einloggen.' });
     }
 };
@@ -130,45 +131,39 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // Login (POST /api/auth/login)
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     const { usernameOrEmail, password } = req.body;
 
     if (!usernameOrEmail || !password) {
         return res.status(400).json({ message: 'Benutzername/E-Mail und Passwort sind erforderlich.' });
     }
 
-    // Benutzer in der Datenbank suchen (nach Username oder Email)
-    const sql = 'SELECT * FROM users WHERE username = ? OR email = ?';
-    db.get(sql, [usernameOrEmail, usernameOrEmail], async (err, user) => {
-        if (err) {
-            console.error('Fehler bei der Benutzersuche:', err.message);
-            return res.status(500).json({ message: 'Fehler beim Login.' });
-        }
-
-        if (!user) {
-            // Benutzer nicht gefunden
-            return res.status(401).json({ message: 'Ungültige Anmeldedaten.' });
-        }
-
-        try {
-            // Passwörter vergleichen
-            const match = await bcrypt.compare(password, user.password_hash);
-
-            if (match) {
-                // Passwort stimmt überein -> Session erstellen
-                req.session.userId = user.id; // Speichere Benutzer-ID in der Session
-                req.session.username = user.username; // Optional: Speichere weitere Daten
-                console.log(`Benutzer ${user.username} eingeloggt, Session ID: ${req.sessionID}`);
-                res.status(200).json({ message: 'Login erfolgreich.', user: { id: user.id, username: user.username } });
-            } else {
-                // Passwort stimmt nicht überein
-                res.status(401).json({ message: 'Ungültige Anmeldedaten.' });
+    try {
+        const sql = 'SELECT * FROM users WHERE username = ? OR email = ?';
+        db.get(sql, [usernameOrEmail, usernameOrEmail], async (err, user) => {
+            if (err) {
+                console.error('Datenbankfehler beim Login:', err.message);
+                return res.status(500).json({ message: 'Ein interner Serverfehler ist aufgetreten.' });
             }
-        } catch (error) {
-            console.error('Fehler beim Passwortvergleich:', error);
-            res.status(500).json({ message: 'Interner Serverfehler.' });
-        }
-    });
+            if (!user) {
+                return res.status(401).json({ message: 'Ungültige Anmeldedaten.' });
+            }
+
+            // Passwort vergleichen
+            const match = await bcrypt.compare(password, user.password_hash);
+            if (match) {
+                // Session erstellen
+                req.session.userId = user.id;
+                req.session.username = user.username;
+                return res.json({ message: 'Login erfolgreich.', user: { id: user.id, username: user.username } });
+            } else {
+                return res.status(401).json({ message: 'Ungültige Anmeldedaten.' });
+            }
+        });
+    } catch (error) {
+        console.error('Fehler beim Login:', error.message);
+        return res.status(500).json({ message: 'Ein interner Serverfehler ist aufgetreten.' });
+    }
 });
 
 // Logout (POST /api/auth/logout)
@@ -205,64 +200,197 @@ app.get('/api/users/me', isAuthenticated, (req, res) => {
     });
 });
 
-// Foto hochladen
-app.post('/api/photos/upload', isAuthenticated, upload.single('photo'), (req, res) => {
+// --- Album Routen ---
+
+// Neues Album erstellen (POST /api/albums)
+app.post('/api/albums', isAuthenticated, async (req, res) => {
+    const { name } = req.body;
+    const userId = req.session.userId;
+
+    if (!name || name.trim() === '') {
+        return res.status(400).json({ message: 'Albumname ist erforderlich.' });
+    }
+
+    try {
+        const sql = 'INSERT INTO albums (name, user_id) VALUES (?, ?)';
+        db.run(sql, [name.trim(), userId], function(err) {
+            if (err) {
+                console.error('Fehler beim Erstellen des Albums:', err.message);
+                return res.status(500).json({ message: 'Album konnte nicht erstellt werden.' });
+            }
+            res.status(201).json({ message: 'Album erfolgreich erstellt.', album: { id: this.lastID, name: name.trim(), user_id: userId } });
+        });
+    } catch (error) {
+        console.error('Fehler beim Erstellen des Albums:', error);
+        res.status(500).json({ message: 'Ein interner Serverfehler ist aufgetreten.' });
+    }
+});
+
+// Alben des aktuellen Benutzers abrufen (GET /api/albums)
+app.get('/api/albums', isAuthenticated, async (req, res) => {
+    const userId = req.session.userId;
+    try {
+        const sql = 'SELECT id, name, user_id, created_at FROM albums WHERE user_id = ? ORDER BY created_at DESC';
+        db.all(sql, [userId], (err, albums) => {
+            if (err) {
+                console.error('Fehler beim Abrufen der Alben:', err.message);
+                return res.status(500).json({ message: 'Alben konnten nicht abgerufen werden.' });
+            }
+            res.json(albums);
+        });
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Alben:', error);
+        res.status(500).json({ message: 'Ein interner Serverfehler ist aufgetreten.' });
+    }
+});
+
+// Fotos innerhalb eines bestimmten Albums des Benutzers abrufen (GET /api/albums/:albumId/photos)
+app.get('/api/albums/:albumId/photos', isAuthenticated, async (req, res) => {
+    const userId = req.session.userId;
+    const albumId = parseInt(req.params.albumId, 10);
+
+    if (isNaN(albumId)) {
+        return res.status(400).json({ message: 'Ungültige Album-ID.' });
+    }
+
+    try {
+        // Zuerst prüfen, ob das Album dem Benutzer gehört
+        const albumCheckSql = 'SELECT id FROM albums WHERE id = ? AND user_id = ?';
+        db.get(albumCheckSql, [albumId, userId], (err, album) => {
+            if (err) {
+                console.error('Fehler beim Überprüfen des Albums:', err.message);
+                return res.status(500).json({ message: 'Fehler beim Abrufen der Fotos.' });
+            }
+            if (!album) {
+                return res.status(404).json({ message: 'Album nicht gefunden oder Zugriff verweigert.' });
+            }
+
+            // Wenn das Album dem Benutzer gehört, Fotos abrufen
+            const photosSql = `
+                SELECT p.id, p.filename, p.user_id, p.album_id, p.created_at, u.username 
+                FROM photos p
+                JOIN users u ON p.user_id = u.id
+                WHERE p.album_id = ? AND p.user_id = ? 
+                ORDER BY p.created_at DESC
+            `;
+            db.all(photosSql, [albumId, userId], (err, photos) => {
+                if (err) {
+                    console.error('Fehler beim Abrufen der Fotos aus dem Album:', err.message);
+                    return res.status(500).json({ message: 'Fotos konnten nicht abgerufen werden.' });
+                }
+                res.json(photos);
+            });
+        });
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Fotos aus dem Album:', error);
+        res.status(500).json({ message: 'Ein interner Serverfehler ist aufgetreten.' });
+    }
+});
+
+
+// --- Foto-Routen ---
+
+// Foto hochladen (POST /api/photos/upload) - jetzt mit album_id
+app.post('/api/photos/upload', isAuthenticated, upload.single('photo'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'Keine Datei hochgeladen.' });
     }
+    
+    const { album_id } = req.body; // Album-ID aus dem Request-Body holen
     const userId = req.session.userId;
-    const { filename, path: filepath, mimetype, size } = req.file;
-    const sql = "INSERT INTO photos (filename, filepath, mimetype, size, user_id) VALUES (?, ?, ?, ?, ?)";
-    db.run(sql, [filename, filepath, mimetype, size, userId], function(err) {
+    const filename = req.file.filename;
+
+    if (!album_id) {
+        // Lösche die hochgeladene Datei, wenn keine Album-ID angegeben wurde, um verwaiste Dateien zu vermeiden
+        fs.unlink(path.join(uploadsDir, filename), (err) => {
+            if (err) console.error("Fehler beim Löschen der Datei nach fehlender album_id:", err);
+        });
+        return res.status(400).json({ message: 'Album-ID ist erforderlich.' });
+    }
+    
+    // Überprüfen, ob das Album dem Benutzer gehört
+    const albumCheckSql = 'SELECT id FROM albums WHERE id = ? AND user_id = ?';
+    db.get(albumCheckSql, [album_id, userId], (err, album) => {
         if (err) {
-            console.error("Fehler beim Speichern des Fotos:", err.message);
-            return res.status(500).json({ message: "Fehler beim Speichern des Fotos." });
+            console.error('Fehler beim Überprüfen des Albums vor dem Hochladen:', err.message);
+            fs.unlink(path.join(uploadsDir, filename), (unlinkErr) => { if (unlinkErr) console.error("Fehler beim Löschen der Datei nach DB-Fehler:", unlinkErr); });
+            return res.status(500).json({ message: 'Fehler beim Hochladen des Fotos.' });
         }
-        res.status(201).json({ 
-            message: "Foto erfolgreich hochgeladen.",
-            photo: { id: this.lastID, filename, upload_timestamp: new Date().toISOString() }
+        if (!album) {
+            fs.unlink(path.join(uploadsDir, filename), (unlinkErr) => { if (unlinkErr) console.error("Fehler beim Löschen der Datei nach ungültigem Album:", unlinkErr); });
+            return res.status(403).json({ message: 'Zugriff auf das Album verweigert oder Album nicht gefunden.' });
+        }
+
+        // Album gehört dem Benutzer, Foto in DB speichern
+        const sql = 'INSERT INTO photos (filename, user_id, album_id) VALUES (?, ?, ?)';
+        db.run(sql, [filename, userId, album_id], function(err) {
+            if (err) {
+                console.error('Fehler beim Speichern des Fotos in der DB:', err.message);
+                // Lösche die hochgeladene Datei bei DB-Fehler
+                fs.unlink(path.join(uploadsDir, filename), (unlinkErr) => {
+                    if (unlinkErr) console.error("Fehler beim Löschen der Datei nach DB-Insert-Fehler:", unlinkErr);
+                });
+                return res.status(500).json({ message: 'Foto konnte nicht in der Datenbank gespeichert werden.' });
+            }
+            res.status(201).json({ message: 'Foto erfolgreich hochgeladen.', photo: { id: this.lastID, filename, user_id: userId, album_id } });
         });
     });
 });
 
-// Eigene Fotos abrufen
+// Alle eigenen Fotos des Benutzers abrufen (GET /api/photos/my)
+// Diese Route könnte nun alle Fotos des Benutzers über alle seine Alben hinweg zurückgeben
+// oder spezifischer sein, je nach Anforderung.
+// Fürs Erste lassen wir sie so, dass sie alle Fotos des Benutzers zurückgibt.
+// Die clientseitige Logik muss dann entscheiden, wie sie diese anzeigt (z.B. gruppiert nach Album).
 app.get('/api/photos/my', isAuthenticated, (req, res) => {
     const userId = req.session.userId;
-    const sql = "SELECT id, filename, upload_timestamp FROM photos WHERE user_id = ? ORDER BY upload_timestamp DESC";
-    db.all(sql, [userId], (err, rows) => {
-        if (err) {
-            console.error("Fehler beim Abrufen der Fotos:", err.message);
-            return res.status(500).json({ message: "Fehler beim Abrufen der Fotos." });
-        }
-        res.status(200).json(rows);
-    });
-});
-
-// Alle Fotos abrufen (NEU)
-// Optional: Add 'isAuthenticated' middleware if only logged-in users should see all photos
-app.get('/api/photos/all', (req, res) => {
-    // Join photos with users table to get username
+    // SQL-Query, um Fotos zusammen mit Album-Namen und Benutzernamen abzurufen
     const sql = `
-        SELECT
-            p.id,
-            p.filename,
-            p.upload_timestamp,
-            u.username
+        SELECT p.id, p.filename, p.user_id, p.album_id, p.created_at, u.username, a.name as album_name
         FROM photos p
         JOIN users u ON p.user_id = u.id
-        ORDER BY p.upload_timestamp DESC
+        JOIN albums a ON p.album_id = a.id
+        WHERE p.user_id = ? 
+        ORDER BY p.created_at DESC
     `;
-    db.all(sql, [], (err, rows) => {
+    db.all(sql, [userId], (err, rows) => {
         if (err) {
-            console.error("Fehler beim Abrufen aller Fotos:", err.message);
-            return res.status(500).json({ message: "Fehler beim Abrufen aller Fotos." });
+            console.error('Fehler beim Abrufen meiner Fotos:', err.message);
+            return res.status(500).json({ message: 'Fehler beim Abrufen der Fotos.' });
         }
-        res.status(200).json(rows);
+        res.json(rows);
     });
 });
 
 
-// Eigenes Foto löschen
+// Alle Fotos von allen Benutzern abrufen (GET /api/photos/all)
+// ACHTUNG: Diese Route gibt ALLE Fotos von ALLEN Benutzern zurück.
+// In einer echten Anwendung benötigen Sie hier möglicherweise eine Paginierung und/oder
+// eine Unterscheidung zwischen öffentlichen und privaten Alben/Fotos.
+// Für dieses Projekt könnte es sinnvoll sein, nur Fotos aus Alben anzuzeigen,
+// die als "öffentlich" markiert sind (erfordert Schemaänderung) oder
+// die Logik hier anzupassen, um die Privatsphäre zu wahren.
+// Vorerst: Gibt alle Fotos mit User- und Albuminformationen zurück.
+app.get('/api/photos/all', isAuthenticated, (req, res) => { // isAuthenticated hier, um Kontext zu haben, wer anfragt
+    const sql = `
+        SELECT p.id, p.filename, p.user_id, p.album_id, p.created_at, u.username, a.name as album_name
+        FROM photos p
+        JOIN users u ON p.user_id = u.id
+        JOIN albums a ON p.album_id = a.id
+        ORDER BY p.created_at DESC
+    `;
+    // Optional: Fügen Sie ein LIMIT hinzu, um die Anzahl der Ergebnisse zu begrenzen, z.B. LIMIT 50
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            console.error('Fehler beim Abrufen aller Fotos:', err.message);
+            return res.status(500).json({ message: 'Fehler beim Abrufen aller Fotos.' });
+        }
+        res.json(rows);
+    });
+});
+
+
+// Foto löschen (DELETE /api/photos/:photoId)
 app.delete('/api/photos/:photoId', isAuthenticated, (req, res) => {
     const userId = req.session.userId;
     const photoId = req.params.photoId;
