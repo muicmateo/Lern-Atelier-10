@@ -22,6 +22,7 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "connect-sqlite3": "^0.9.15",
+    "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
     "lightbox2": "^2.11.5",

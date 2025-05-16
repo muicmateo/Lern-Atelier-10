@@ -54,20 +54,20 @@ Diese Kern-Funktionalitäten brechen Sie nun in etwa 4 AP je herunter. Versuchen
 ## 16.5
 
 - [ ] Datenbank (SQLite) fehler lösen 
-- [ ] Benutzerspezifische Fotoanzeige basierend auf Benutzername-Eingabe (ohne Login)
-- [ ] Nachrichten für Benutzeraktionen verbessern
+- [x] Benutzerspezifische Fotoanzeige basierend auf Benutzername-Eingabe (ohne Login)
+- [x] Nachrichten für Benutzeraktionen verbessern
 - [ ] Albums feature weiterentwickeln
 
-✍️ Heute habe ich... (50-100 Wörter)
+✍️ Heute habe ich insbesondere mit dem Datenbankfehler beschäftigt. Konnte es teilweise lösen aber es gibt noch probleme zu beheben. Die eigene Fotos werden jetzt geladen aber alle andere Fotos werden nicht angezeigt. Ein Lightbox2 fehler habe ich auch gelöst. Jetzt sieht die Seite ein bisschen besser aus. Die Nachrichten für Benuteraktionen funktioniert auch, 
 
 ☝️  Vergessen Sie nicht, den Code von heute auf github hochzuladen.
 
 ## 23.5
 
-- [ ] ...
-- [ ] ...
-- [ ] ...
-- [ ] ...
+- [ ] "Alle Fotos" Anzeige fehler beheben
+- [ ] Albums kernfunktionalität weiterentwickeln
+- [ ] Die letzte SQLite fehler beheben
+- [ ] beginn mit Frontend design
 
 ✍️ Heute habe ich... (50-100 Wörter)
 

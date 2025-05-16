@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foto-Galerie</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header>
+        <h1>Foto-Galerie</h1>
+        <% if (filteredUsername) { %>
+            <h2>Fotos von: <%= filteredUsername %></h2>
+        <% } %>
+    </header>
+    
+    <main>
+        <section class="filter-section">
+            <form action="/fotos-von-benutzer" method="get">
+                <label for="username">Benutzername:</label>
+                <input type="text" id="username" name="username" value="<%= filteredUsername || '' %>">
+                <button type="submit">Fotos anzeigen</button>
+            </form>
+        </section>
+        
+        <% if (message) { %>
+            <div class="message"><%= message %></div>
+        <% } %>
+        
+        <section class="photo-gallery">
+            <% if (photos && photos.length > 0) { %>
+                <% photos.forEach(photo => { %>
+                    <div class="photo-card">
+                        <img src="/uploads/<%= photo.filename %>" alt="Foto">
+                        <div class="photo-info">
+                            <p>Hochgeladen von: <%= photo.username || 'Unbekannt' %></p>
+                            <p>Album: <%= photo.album_name || 'Kein Album' %></p>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else if (!message) { %>
+                <p>Keine Fotos gefunden.</p>
+            <% } %>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2023 Foto-Sharing-App</p>
+    </footer>
+</body>
+</html>

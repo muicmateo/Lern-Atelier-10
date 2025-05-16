@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foto-Sharing App</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Lightbox2 CSS - Single Import -->
-    <link href="/node_modules/lightbox2/dist/css/lightbox.min.css" rel="stylesheet">
+    <!-- Ändere diese Zeilen -->
+    <link rel="stylesheet" href="node_modules/lightbox2/dist/css/lightbox.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <h1>Foto-Sharing App</h1>
@@ -83,15 +84,29 @@
             <p>Lade Fotos...</p>
         </div>
 
-        <h2>Alle Fotos</h2>
+        <section>
+            <h2>Meine Fotos</h2>
+            <div id="my-photos" class="photo-gallery">
+                <!-- Fotos werden hier dynamisch eingefügt -->
+            </div>
+        </section>
+
+        <section>
+            <h2>Alle Fotos</h2>
+            <div id="all-photos" class="photo-gallery">
+                <!-- Fotos werden hier dynamisch eingefügt -->
+            </div>
+        </section>
         <div id="photo-gallery-all">
             <!-- Fotos werden hier geladen -->
             <p>Lade Fotos...</p>
         </div>
     </div>
 
+    <!-- jQuery (muss vor Lightbox geladen werden) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
     <!-- Lightbox2 JS - Single Import -->
-    <script src="/node_modules/lightbox2/dist/js/lightbox.min.js"></script>
+    <script src="node_modules/lightbox2/dist/js/lightbox.min.js"></script>
 
     <!-- Your script -->
     <script src="script.js"></script>

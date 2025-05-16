@@ -454,3 +454,102 @@ app.delete('/api/photos/:photoId', isAuthenticated, (req, res) => {
 app.listen(port, () => {
     console.log(`Server läuft auf http://localhost:${port}`);
 });
+
+
+// Route, um Fotos basierend auf dem Benutzernamen anzuzeigen
+app.get('/fotos-von-benutzer', async (req, res) => {
+    const usernameToFilter = req.query.username;
+
+    if (!usernameToFilter) {
+        return res.render('gallery', {
+            photos: [], 
+            message: 'Bitte einen Benutzernamen eingeben.'
+        });
+    }
+
+    try {
+        // Abfrage mit Beziehungstabelle (photo_permissions)
+        const query = `
+            SELECT p.* 
+            FROM photos p
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN photo_permissions pp ON p.id = pp.photo_id
+            LEFT JOIN users viewer ON pp.user_id = viewer.id
+            WHERE u.username = ? OR viewer.username = ?
+        `;
+        
+        db.all(query, [usernameToFilter, usernameToFilter], (err, photos) => {
+            if (err) {
+                console.error("Fehler beim Abrufen der Fotos:", err.message);
+                return res.render('gallery', {
+                    photos: [],
+                    message: "Ein Fehler ist aufgetreten beim Laden der Fotos."
+                });
+            }
+            
+            res.render('gallery', {
+                photos: photos, 
+                filteredUsername: usernameToFilter,
+                message: photos.length === 0 ? `Keine Fotos für ${usernameToFilter} gefunden.` : null
+            });
+        });
+
+    } catch (error) {
+        console.error("Fehler beim Verarbeiten der Anfrage:", error);
+        res.render('gallery', {
+            photos: [],
+            message: "Ein Fehler ist aufgetreten beim Laden der Fotos."
+        });
+    }
+});
+
+// EJS als Template-Engine einrichten
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+
+// Foto mit einem anderen Benutzer teilen
+app.post('/api/photos/:photoId/share', isAuthenticated, (req, res) => {
+    const userId = req.session.userId;
+    const photoId = req.params.photoId;
+    const { targetUsername, permissionType = 'view' } = req.body;
+    
+    if (!targetUsername) {
+        return res.status(400).json({ message: 'Benutzername ist erforderlich.' });
+    }
+    
+    // 1. Überprüfen, ob das Foto dem aktuellen Benutzer gehört
+    db.get('SELECT id FROM photos WHERE id = ? AND user_id = ?', [photoId, userId], (err, photo) => {
+        if (err) {
+            console.error('Fehler beim Überprüfen des Fotos:', err.message);
+            return res.status(500).json({ message: 'Fehler beim Teilen des Fotos.' });
+        }
+        
+        if (!photo) {
+            return res.status(403).json({ message: 'Nicht autorisiert, dieses Foto zu teilen.' });
+        }
+        
+        // 2. Ziel-Benutzer finden
+        db.get('SELECT id FROM users WHERE username = ?', [targetUsername], (err, targetUser) => {
+            if (err) {
+                console.error('Fehler beim Suchen des Ziel-Benutzers:', err.message);
+                return res.status(500).json({ message: 'Fehler beim Teilen des Fotos.' });
+            }
+            
+            if (!targetUser) {
+                return res.status(404).json({ message: 'Ziel-Benutzer nicht gefunden.' });
+            }
+            
+            // 3. Berechtigung hinzufügen
+            const sql = 'INSERT OR REPLACE INTO photo_permissions (photo_id, user_id, permission_type) VALUES (?, ?, ?)';
+            db.run(sql, [photoId, targetUser.id, permissionType], function(err) {
+                if (err) {
+                    console.error('Fehler beim Hinzufügen der Berechtigung:', err.message);
+                    return res.status(500).json({ message: 'Fehler beim Teilen des Fotos.' });
+                }
+                
+                res.status(200).json({ message: `Foto erfolgreich mit ${targetUsername} geteilt.` });
+            });
+        });
+    });
+});
