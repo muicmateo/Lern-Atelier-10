@@ -54,9 +54,9 @@ Diese Kern-Funktionalitäten brechen Sie nun in etwa 4 AP je herunter. Versuchen
 ## 16.5
 
 - [ ] Datenbank (SQLite) fehler lösen 
-- [ ] Albums feature komplett fertig hinzufügen
+- [ ] Benutzerspezifische Fotoanzeige basierend auf Benutzername-Eingabe (ohne Login)
 - [ ] Nachrichten für Benutzeraktionen verbessern
-- [ ] Frontend design anfangen zu implementieren
+- [ ] Albums feature weiterentwickeln
 
 ✍️ Heute habe ich... (50-100 Wörter)
 
