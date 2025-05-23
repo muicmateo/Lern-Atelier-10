@@ -370,30 +370,31 @@ app.get('/api/photos/my', isAuthenticated, (req, res) => {
 
 
 // GET all photos (adjust for privacy/pagination as needed)
-app.get('/api/photos/all', isAuthenticated, (req, res) => { 
-    // isAuthenticated ensures only logged-in users can see this list for now
-    const sql = `
-        SELECT 
-            p.id, 
-            p.filename, 
-            p.user_id, 
-            u.username AS owner_username, 
-            p.album_id, 
-            a.name AS album_name, 
-            p.created_at 
-        FROM photos p
-        JOIN users u ON p.user_id = u.id
-        JOIN albums a ON p.album_id = a.id
-        ORDER BY p.created_at DESC
-    `;
-    
-    db.all(sql, [], (err, rows) => {
-        if (err) {
-            console.error('Datenbankfehler beim Abrufen aller Fotos:', err.message); // This error
-            return res.status(500).json({ message: 'Fehler beim Abrufen aller Fotos.' });
-        }
-        res.json(rows);
-    });
+// Add this route to handle /api/photos requests
+app.get('/api/photos', isAuthenticated, (req, res) => { 
+// Reuse the same SQL query from the /api/photos/all route
+const sql = `
+SELECT 
+p.id, 
+p.filename, 
+p.user_id, 
+u.username AS owner_username, 
+p.album_id, 
+a.name AS album_name, 
+p.created_at 
+FROM photos p
+JOIN users u ON p.user_id = u.id
+JOIN albums a ON p.album_id = a.id
+ORDER BY p.created_at DESC
+`;
+
+db.all(sql, [], (err, rows) => {
+if (err) {
+console.error('Datenbankfehler beim Abrufen aller Fotos:', err.message);
+return res.status(500).json({ message: 'Fehler beim Abrufen aller Fotos.' });
+}
+res.json(rows);
+});
 });
 
 // Foto löschen (DELETE /api/photos/:photoId)

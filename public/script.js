@@ -505,7 +505,7 @@ function loadMyPhotos() {
 
 // Funktion zum Laden aller Fotos
 function loadAllPhotos() {
-    fetch('/api/photos', {
+    fetch('/api/photos', { // Changed from /api/photos/all to /api/photos
         method: 'GET',
         credentials: 'same-origin'
     })
