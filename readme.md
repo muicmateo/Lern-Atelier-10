@@ -64,12 +64,12 @@ Diese Kern-Funktionalitäten brechen Sie nun in etwa 4 AP je herunter. Versuchen
 
 ## 23.5
 
-- [ ] "Alle Fotos" Anzeige fehler beheben
+- [x] "Alle Fotos" Anzeige fehler beheben
 - [ ] Albums kernfunktionalität weiterentwickeln
-- [ ] Die letzte SQLite fehler beheben
+- [x] Die letzte SQLite fehler beheben
 - [ ] beginn mit Frontend design
 
-✍️ Heute habe ich... (50-100 Wörter)
+✍️ Heute habe ich das "Alle Fotos" Anzeige fehler gefixt. Ich habe unnötig lange daran gearbeitet obwohl der Fehler nur ein Tippfehler war. Das hat mich sehr genervt. Dann habe ich bemerkt das es einen Fehler gab bei der Kontoerstellung für den ich nicht wusste. Also habe ich das auch gefixt. Das war wie ein zusätzlicher Arbeitspaket und zuletzt habe ich sichergestellt das Fotos von anderen Konten richtig dargestellt werden. (50-100 Wörter)
 
 ☝️  Vergessen Sie nicht, den Code von heute auf github hochzuladen.
 
