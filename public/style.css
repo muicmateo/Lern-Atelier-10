@@ -1,19 +1,27 @@
 body {
-    font-family: sans-serif;
-    margin: 20px;
-    background-color: #f4f4f4;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Modern font stack */
+    margin: 0; /* Remove default margin */
+    padding: 20px; /* Add padding to the body */
+    background-color: #f0f2f5; /* Lighter, modern background */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center content horizontally */
 }
 
 h1, h2 {
-    color: #333;
+    color: #1d2129; /* Darker, modern text color */
+    text-align: center; /* Center headings */
 }
 
 #auth-section, #app-section {
-    background-color: #fff;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #ffffff;
+    padding: 30px; /* Increased padding */
+    margin-bottom: 30px;
+    border-radius: 12px; /* More rounded edges */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Softer, modern shadow */
+    width: 100%;
+    max-width: 600px; /* Max width for content sections */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
 input[type="text"],
@@ -22,32 +30,36 @@ input[type="password"],
 input[type="file"],
 select,
 button {
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    width: calc(100% - 22px); /* Adjust width considering padding and border */
-    max-width: 300px; /* Limit max width */
+    padding: 12px 15px; /* Increased padding */
+    margin-bottom: 15px;
+    border: 1px solid #ccd0d5;
+    border-radius: 8px; /* More rounded edges */
+    width: calc(100% - 32px); /* Adjust width considering padding and border */
+    max-width: 100%; /* Allow full width within container */
+    box-sizing: border-box;
+    font-size: 16px; /* Slightly larger font */
 }
 
 button {
-    background-color: #5cb85c;
+    background-color: #007bff; /* Modern blue */
     color: white;
     border: none;
     cursor: pointer;
     width: auto; /* Allow button width to adjust */
-    padding: 10px 15px;
+    padding: 12px 20px;
+    font-weight: 600; /* Bolder text */
+    transition: background-color 0.2s ease-in-out; /* Smooth transition */
 }
 
 button:hover {
-    background-color: #4cae4c;
+    background-color: #0056b3; /* Darker blue on hover */
 }
 
 #logout-button {
-    background-color: #d9534f;
+    background-color: #dc3545; /* Modern red */
 }
 #logout-button:hover {
-    background-color: #c9302c;
+    background-color: #c82333; /* Darker red on hover */
 }
 
 hr {
@@ -57,31 +69,38 @@ hr {
 }
 
 .message {
-    color: red;
+    color: #dc3545; /* Consistent red for errors */
     font-size: 0.9em;
     margin-top: 5px;
     min-height: 1.2em; /* Reserve space */
+    text-align: center; /* Center messages */
 }
 
 .message.success {
-    color: green;
+    color: #28a745; /* Consistent green for success */
 }
 
 #photo-gallery {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Responsive grid */
-    gap: 10px;
-    margin-top: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Adjusted minmax */
+    gap: 15px; /* Adjusted gap */
+    margin-top: 20px;
 }
 
 #photo-gallery img {
     width: 100%;
     height: auto;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    object-fit: cover; /* Ensure images cover the area nicely */
-    aspect-ratio: 1 / 1; /* Make images square */
-    cursor: pointer; /* Show pointer cursor on images */
+    border: 1px solid #dee2e6;
+    border-radius: 8px; /* Rounded edges for gallery images */
+    object-fit: cover; 
+    aspect-ratio: 1 / 1; 
+    cursor: pointer; 
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Added shadow transition */
+}
+
+#photo-gallery img:hover {
+    transform: scale(1.05); /* Slight zoom on hover */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .photo-container {
@@ -108,45 +127,55 @@ hr {
 }
 
 .photo-card {
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    border-radius: 12px; /* More rounded edges */
     overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     position: relative;
+    background-color: #fff; /* Ensure card background is white */
 }
 
 .photo-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    transform: translateY(-5px) scale(1.02); /* Added slight scale */
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
 }
 
 .photo-card img {
     width: 100%;
-    height: 200px; /* You can keep or adjust this */
-    object-fit: contain; /* Changed from cover to contain */
+    height: 220px; /* Adjusted height */
+    object-fit: cover; /* Changed back to cover for better fill, adjust if needed */
     display: block;
 }
 
 .photo-info {
-    padding: 10px;
-    background-color: #f8f8f8;
+    padding: 15px;
+    background-color: #f8f9fa; /* Lighter info background */
+    font-size: 0.9rem;
+}
+
+.photo-info p {
+    margin: 5px 0;
+    color: #495057;
 }
 
 .photo-actions {
     display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    background-color: #f0f0f0;
+    justify-content: space-around; /* Space out actions more evenly */
+    padding: 10px 15px;
+    background-color: #e9ecef; /* Lighter actions background */
+    border-top: 1px solid #dee2e6;
 }
 
 .photo-actions button {
     border: none;
     background-color: transparent;
     cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .photo-actions button:hover {
@@ -193,4 +222,75 @@ hr {
     color: white;
     font-size: 30px;
     cursor: pointer;
+}
+
+/* Layout für Hauptinhalt und Sidebar */
+#app-container {
+    display: flex; /* Ermöglicht Side-by-Side-Layout */
+    flex-wrap: wrap; /* Erlaubt Umbruch auf kleineren Bildschirmen */
+    gap: 20px; /* Abstand zwischen Hauptinhalt und Sidebar */
+    width: 100%;
+    max-width: 1200px; /* Maximale Breite für den gesamten App-Container */
+    margin: 0 auto; /* Zentriert den App-Container, wenn er schmaler als der Viewport ist */
+}
+
+#main-content {
+    flex: 3; /* Hauptinhalt nimmt mehr Platz ein */
+    min-width: 300px; /* Mindestbreite für den Hauptinhalt */
+}
+
+/* #app-section bleibt wie es ist, da es jetzt innerhalb von #main-content ist */
+
+#user-list-sidebar {
+    flex: 1; /* Sidebar nimmt weniger Platz ein */
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    min-width: 200px; /* Mindestbreite für die Sidebar */
+    max-height: 80vh; /* Maximale Höhe, um Scrollen zu ermöglichen */
+    overflow-y: auto; /* Scrollbar, falls die Liste zu lang wird */
+}
+
+#user-list-sidebar h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+#user-list-display {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#user-list-display li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+    color: #495057;
+    cursor: default; /* Oder 'pointer', wenn Sie Klick-Interaktionen hinzufügen */
+}
+
+#user-list-display li:last-child {
+    border-bottom: none;
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 768px) {
+    #app-container {
+        flex-direction: column; /* Stapelelemente auf kleineren Bildschirmen */
+    }
+
+    #main-content,
+    #user-list-sidebar {
+        flex: none; /* Entferne Flex-Wachstum, um volle Breite zu ermöglichen */
+        width: 100%;
+    }
+
+    #user-list-sidebar {
+        max-height: 300px; /* Reduziere die maximale Höhe auf kleineren Bildschirmen */
+    }
 }

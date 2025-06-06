@@ -436,19 +436,51 @@ app.delete('/api/photos/:photoId', isAuthenticated, (req, res) => {
             if (photo.filepath) {
                 fs.unlink(photo.filepath, (unlinkErr) => {
                     if (unlinkErr) {
-                        // Loggen Sie den Fehler, aber senden Sie trotzdem eine Erfolgsmeldung,
-                        // da der DB-Eintrag entfernt wurde.
-                        console.error(`Fehler beim Löschen der Datei ${photo.filepath}:`, unlinkErr.message);
-                    } else {
-                        console.log(`Datei ${photo.filepath} erfolgreich gelöscht.`);
+                        // Loggen Sie den Fehler, aber senden Sie trotzdem eine Erfolgsmeldung
+                        console.error("Fehler beim Löschen der Datei:", unlinkErr);
                     }
+                    res.json({ message: "Foto erfolgreich gelöscht." });
                 });
+            } else {
+                res.json({ message: "Foto erfolgreich gelöscht." });
             }
-
-            res.status(200).json({ message: "Foto erfolgreich gelöscht." });
         });
+    }); // Schließende Klammer für db.get
+}); // Schließende Klammer für die Route
+    // 2. Überprüfen, ob der eingeloggte Benutzer der Besitzer ist
+    if (photo.user_id !== userId) {
+        return res.status(403).json({ message: "Nicht autorisiert, dieses Foto zu löschen." });
+    }
+
+    // 3. Foto aus der Datenbank löschen
+    const deleteSql = "DELETE FROM photos WHERE id = ? AND user_id = ?";
+    db.run(deleteSql, [photoId, userId], function(err) {
+        if (err) {
+            console.error("Fehler beim Löschen des Fotos aus der DB:", err.message);
+            return res.status(500).json({ message: "Fehler beim Löschen des Fotos." });
+        }
+
+        if (this.changes === 0) {
+            // Sollte nicht passieren wegen der vorherigen Prüfung, aber sicher ist sicher
+            return res.status(404).json({ message: "Foto nicht gefunden oder gehört nicht Ihnen." });
+        }
+
+        // 4. (Optional aber empfohlen) Foto aus dem Dateisystem löschen
+        if (photo.filepath) {
+            fs.unlink(photo.filepath, (unlinkErr) => {
+                if (unlinkErr) {
+                    // Loggen Sie den Fehler, aber senden Sie trotzdem eine Erfolgsmeldung,
+                    // da der DB-Eintrag entfernt wurde.
+                    console.error(`Fehler beim Löschen der Datei ${photo.filepath}:`, unlinkErr.message);
+                } else {
+                    console.log(`Datei ${photo.filepath} erfolgreich gelöscht.`);
+                }
+            });
+        }
+
+        res.status(200).json({ message: "Foto erfolgreich gelöscht." });
     });
-});
+
 
 
 // Server starten

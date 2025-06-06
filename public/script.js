@@ -3,6 +3,8 @@ let authSection, appSection, loginForm, registerForm, loginMessage, registerMess
 let userGreeting, logoutButton, uploadForm, photoInput, uploadMessage;
 let myPhotosGallery, globalPhotosGallery, createAlbumForm, albumNameInput, albumMessage;
 let albumsListDiv, albumSelectUpload, albumPhotoGalleryDiv, currentAlbumTitle;
+let userListDisplay; // NEUE GLOBALE VARIABLE
+let appContainer; // NEUE GLOBALE VARIABLE für den Hauptcontainer
 
 let currentUserId = null; // To store the ID of the logged-in user
 
@@ -10,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Initialize DOM Elements ---
     authSection = document.getElementById('auth-section');
     appSection = document.getElementById('app-section');
+    appContainer = document.getElementById('app-container'); // Initialisiere appContainer
     loginForm = document.getElementById('login-form');
     registerForm = document.getElementById('register-form');
     loginMessage = document.getElementById('login-message');
@@ -28,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     albumSelectUpload = document.getElementById('album-select-upload');
     albumPhotoGalleryDiv = document.getElementById('album-photo-gallery');
     currentAlbumTitle = document.getElementById('current-album-title');
+    userListDisplay = document.getElementById('user-list-display'); // Initialisiere userListDisplay
 
     // Set up event listeners
     if (loginForm) loginForm.addEventListener('submit', handleLogin);
@@ -57,15 +61,16 @@ async function checkAuthStatus() {
         const response = await fetch('/api/users/me');
         if (response.ok) {
             const user = await response.json();
-            currentUserId = user.id; // currentUserId is now global
-            if (userGreeting) userGreeting.textContent = user.username; // userGreeting is now global
-            if (authSection) authSection.style.display = 'none'; // authSection is now global
-            if (appSection) appSection.style.display = 'block'; // appSection is now global
+            currentUserId = user.id; 
+            if (userGreeting) userGreeting.textContent = user.username; 
+            if (authSection) authSection.style.display = 'none'; 
+            // if (appSection) appSection.style.display = 'block'; // Alte Zeile
+            if (appContainer) appContainer.style.display = 'flex'; // NEU: Zeige den Hauptcontainer an
             
-            // Call the newly defined functions
             loadAlbums();
-            loadMyPhotos(false); // Assuming false means don't force refresh or similar logic
+            loadMyPhotos(false); 
             loadAllPhotos();
+            loadUserList(); // NEUER AUFRUF
 
         } else {
             clearAuthState();
@@ -77,10 +82,12 @@ async function checkAuthStatus() {
 }
 
 function clearAuthState() {
-    currentUserId = null; // currentUserId is now global
-    if (authSection) authSection.style.display = 'block'; // authSection is now global
-    if (appSection) appSection.style.display = 'none'; // appSection is now global
+    currentUserId = null; 
+    if (authSection) authSection.style.display = 'block'; 
+    // if (appSection) appSection.style.display = 'none'; // Alte Zeile
+    if (appContainer) appContainer.style.display = 'none'; // NEU: Verstecke den Hauptcontainer
     clearGalleriesAndAlbumInfo();
+    if (userListDisplay) userListDisplay.innerHTML = '<li>Bitte einloggen.</li>'; // NEU
 }
 
 function clearGalleriesAndAlbumInfo() {
@@ -794,6 +801,421 @@ function loadAllPhotos() {
             `<p class="error">Fehler beim Laden der Fotos: ${error.message}</p>`;
         document.getElementById('all-photos').innerHTML = 
             `<p class="error">Fehler beim Laden der Fotos: ${error.message}</p>`;
+    });
+}
+
+// Funktion zum Anzeigen der Fotos in einer Galerie
+function renderPhotoGallery(photos, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!photos || photos.length === 0) {
+        container.innerHTML = '<p>Keine Fotos vorhanden.</p>';
+        return;
+    }
+    
+    photos.forEach(photo => {
+        const photoCard = document.createElement('div');
+        photoCard.className = 'photo-card';
+        
+        // Erstelle das Bild-Element
+        const img = document.createElement('img');
+        img.src = `/uploads/${photo.filename}`;
+        img.alt = 'Foto';
+        img.addEventListener('click', () => openPhotoModal(photo.filename));
+        
+        // Erstelle die Info-Box
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'photo-info';
+        infoDiv.innerHTML = `
+            <p>Hochgeladen: ${new Date(photo.created_at || Date.now()).toLocaleDateString()}</p>
+        `;
+        
+        // Erstelle die Aktions-Buttons
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'photo-actions';
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Löschen';
+        deleteBtn.addEventListener('click', () => deletePhoto(photo.id));
+        
+        const shareBtn = document.createElement('button');
+        shareBtn.className = 'share-btn';
+        shareBtn.innerHTML = '<i class="fas fa-share"></i> Teilen';
+        shareBtn.addEventListener('click', () => showShareDialog(photo.id));
+        
+        actionsDiv.appendChild(deleteBtn);
+        actionsDiv.appendChild(shareBtn);
+        
+        // Füge alles zum Foto-Card hinzu
+        photoCard.appendChild(img);
+        photoCard.appendChild(infoDiv);
+        photoCard.appendChild(actionsDiv);
+        
+        container.appendChild(photoCard);
+    });
+}
+
+// NEUE FUNKTIONEN ZUM LADEN UND ANZEIGEN DER BENUTZERLISTE
+async function loadUserList() {
+    if (!userListDisplay) return;
+    userListDisplay.innerHTML = '<li>Lade Benutzer...</li>'; // Ladezustand anzeigen
+
+    try {
+        const response = await fetch('/api/users/list');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Fehler beim Laden der Benutzerliste');
+        }
+        const users = await response.json();
+        renderUserList(users);
+    } catch (error) {
+        console.error('Fehler beim Laden der Benutzerliste:', error);
+        if (userListDisplay) userListDisplay.innerHTML = `<li>Fehler: ${error.message}</li>`;
+    }
+}
+
+function renderUserList(users) {
+    if (!userListDisplay) return;
+    userListDisplay.innerHTML = ''; // Bestehende Liste leeren
+
+    if (users && users.length > 0) {
+        users.forEach(user => {
+            const listItem = document.createElement('li');
+            listItem.textContent = user.username;
+            // Optional: Klick-Event hinzufügen, um Benutzerprofile anzuzeigen (zukünftige Erweiterung)
+            // listItem.addEventListener('click', () => viewUserProfile(user.id));
+            userListDisplay.appendChild(listItem);
+        });
+    } else {
+        userListDisplay.innerHTML = '<li>Keine Benutzer gefunden.</li>';
+    }
+}
+
+// Function to handle photo upload
+function handleUpload(event) {
+    event.preventDefault();
+    if (!uploadMessage || !photoInput || !uploadForm) {
+         console.error("Upload form elements not found");
+         return;
+    }
+    showMessage(uploadMessage, '', false); // Clear previous messages
+
+    const photoFile = photoInput.files[0]; // photoInput is now global
+    const selectedAlbumId = albumSelectUpload ? albumSelectUpload.value : null; // albumSelectUpload is now global
+
+    if (!photoFile) {
+        showMessage(uploadMessage, 'Bitte wählen Sie eine Datei aus.', true);
+        return;
+    }
+    
+    // Require an album to be selected for upload
+    if (!selectedAlbumId) {
+        showMessage(uploadMessage, 'Bitte wählen Sie ein Album für das Foto aus.', true);
+        return;
+    }
+
+    showMessage(uploadMessage, 'Lade Foto hoch...', false);
+    const formData = new FormData();
+    formData.append('photo', photoFile);
+    formData.append('album_id', selectedAlbumId); // Ensure album_id is appended
+
+    fetch('/api/photos/upload', {
+        method: 'POST',
+        body: formData,
+        // Headers for FormData are set automatically by the browser, including Content-Type: multipart/form-data
+    })
+    .then(async response => { // Make this async to await response.json() in case of error
+        const data = await response.json(); // Try to parse JSON regardless of response.ok
+        return { response, data }; // Pass both to the next .then()
+    })
+    .then(({response, data}) => { // Destructure to get response and data
+        if (!response.ok) {
+            // data.message should now contain "Album-ID ist erforderlich." or other server messages
+            throw new Error(data.message || 'Upload fehlgeschlagen.');
+        }
+        showMessage(uploadMessage, 'Foto erfolgreich hochgeladen!', false);
+        if (uploadForm) uploadForm.reset(); // uploadForm is now global
+        
+        // Refresh relevant photo lists
+        if (typeof loadMyPhotos === 'function') loadMyPhotos(false);
+        if (typeof loadAllPhotos === 'function') loadAllPhotos();
+        // If uploading to a specific album, you might want to refresh that album's view too
+        if (selectedAlbumId && typeof loadPhotosForAlbum === 'function') loadPhotosForAlbum(selectedAlbumId);
+
+    })
+    .catch(error => {
+        console.error('Upload error:', error);
+        showMessage(uploadMessage, `Fehler: ${error.message}`, true);
+    });
+}
+
+// --- Album Functions ---
+async function handleCreateAlbum(event) {
+    event.preventDefault();
+    if (!albumMessage || !albumNameInput || !createAlbumForm) {
+        console.error("Album creation form elements not found");
+        return;
+    }
+    showMessage(albumMessage, '', false); // Clear previous messages
+
+    const albumName = albumNameInput.value.trim(); // albumNameInput is now global
+    if (!albumName) {
+        showMessage(albumMessage, 'Albumname ist erforderlich.', true);
+        return;
+    }
+    showMessage(albumMessage, 'Erstelle Album...', false);
+
+    try {
+        const response = await fetch('/api/albums', { // Ensure this endpoint exists
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: albumName }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || `Fehler beim Erstellen des Albums: ${response.statusText}`);
+        }
+
+        showMessage(albumMessage, 'Album erfolgreich erstellt!', false);
+        if (createAlbumForm) createAlbumForm.reset(); // createAlbumForm is now global
+        loadAlbums(); // Reload albums list
+    } catch (error) {
+        console.error('Fehler beim Erstellen des Albums:', error);
+        showMessage(albumMessage, error.message || 'Ein Fehler ist aufgetreten.', true);
+    }
+}
+
+// --- Stub Functions - Implement these ---
+
+// Funktion zum Anzeigen der Fotos in einer Galerie
+function renderPhotoGallery(photos, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!photos || photos.length === 0) {
+        container.innerHTML = '<p>Keine Fotos vorhanden.</p>';
+        return;
+    }
+    
+    photos.forEach(photo => {
+        const photoCard = document.createElement('div');
+        photoCard.className = 'photo-card';
+        
+        // Erstelle das Bild-Element
+        const img = document.createElement('img');
+        img.src = `/uploads/${photo.filename}`;
+        img.alt = 'Foto';
+        img.addEventListener('click', () => openPhotoModal(photo.filename));
+        
+        // Erstelle die Info-Box
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'photo-info';
+        infoDiv.innerHTML = `
+            <p>Hochgeladen: ${new Date(photo.created_at || Date.now()).toLocaleDateString()}</p>
+        `;
+        
+        // Erstelle die Aktions-Buttons
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'photo-actions';
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Löschen';
+        deleteBtn.addEventListener('click', () => deletePhoto(photo.id));
+        
+        const shareBtn = document.createElement('button');
+        shareBtn.className = 'share-btn';
+        shareBtn.innerHTML = '<i class="fas fa-share"></i> Teilen';
+        shareBtn.addEventListener('click', () => showShareDialog(photo.id));
+        
+        actionsDiv.appendChild(deleteBtn);
+        actionsDiv.appendChild(shareBtn);
+        
+        // Füge alles zum Foto-Card hinzu
+        photoCard.appendChild(img);
+        photoCard.appendChild(infoDiv);
+        photoCard.appendChild(actionsDiv);
+        
+        container.appendChild(photoCard);
+    });
+}
+
+// Funktion zum Öffnen der Vollbildansicht
+function openPhotoModal(filename) {
+    const modal = document.createElement('div');
+    modal.className = 'photo-modal';
+    modal.style.display = 'flex';
+    
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    
+    const img = document.createElement('img');
+    img.src = `/uploads/${filename}`;
+    img.alt = 'Foto Vollbild';
+    
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'close-modal';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+    
+    modalContent.appendChild(img);
+    modal.appendChild(modalContent);
+    modal.appendChild(closeBtn);
+    
+    // Schließen beim Klick außerhalb des Bildes
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+    
+    document.body.appendChild(modal);
+}
+
+// Funktion zum Löschen eines Fotos
+function deletePhoto(photoId) {
+    if (!confirm('Möchtest du dieses Foto wirklich löschen?')) {
+        return;
+    }
+    
+    fetch(`/api/photos/${photoId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Fehler beim Löschen des Fotos');
+        }
+        return response.json();
+    })
+    .then(data => {
+        showMessage(data.message, 'success');
+        // Aktualisiere die Fotogalerie
+        loadMyPhotos();
+        loadAllPhotos();
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        showMessage('Fehler beim Löschen des Fotos', 'error');
+    });
+}
+
+// Funktion zum Anzeigen des Teilen-Dialogs
+function showShareDialog(photoId) {
+    // Erstelle einen einfachen Dialog zum Teilen
+    const username = prompt('Mit welchem Benutzer möchtest du dieses Foto teilen?');
+    
+    if (!username) return;
+    
+    fetch(`/api/photos/${photoId}/share`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ targetUsername: username }),
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Fehler beim Teilen des Fotos');
+        }
+        return response.json();
+    })
+    .then(data => {
+        showMessage(data.message, 'success');
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        showMessage('Fehler beim Teilen des Fotos', 'error');
+    });
+}
+
+// Funktion zum Anzeigen von Benachrichtigungen
+function showMessage(message, type = 'info') {
+    const messageContainer = document.createElement('div');
+    messageContainer.className = `message ${type}`;
+    messageContainer.textContent = message;
+    
+    document.body.appendChild(messageContainer);
+    
+    // Nachricht nach 3 Sekunden ausblenden
+    setTimeout(() => {
+        messageContainer.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(messageContainer);
+        }, 500);
+    }, 3000);
+}
+
+// Lade meine Fotos beim Seitenaufruf
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing code ... 
+    
+    // Lade Fotos, wenn die entsprechenden Container existieren
+    if (document.getElementById('my-photos')) {
+        loadMyPhotos();
+    }
+    
+    if (document.getElementById('all-photos')) {
+        loadAllPhotos();
+    }
+});
+
+// Funktion zum Laden meiner Fotos
+function loadMyPhotos() {
+    fetch('/api/photos/my', {
+        method: 'GET',
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Fehler beim Laden der Fotos');
+        }
+        return response.json();
+    })
+    .then(photos => {
+        renderPhotoGallery(photos, 'my-photos');
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        showMessage('Fehler beim Laden deiner Fotos', 'error');
+    });
+}
+
+// Funktion zum Laden aller Fotos
+function loadAllPhotos() {
+    fetch('/api/photos', {
+        method: 'GET',
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Fehler beim Laden der Fotos');
+        }
+        return response.json();
+    })
+    .then(photos => {
+        renderPhotoGallery(photos, 'photo-gallery-all');
+        renderPhotoGallery(photos, 'all-photos');
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        showMessage('Fehler beim Laden aller Fotos', 'error');
     });
 }
 

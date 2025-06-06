@@ -33,74 +33,86 @@
         <p id="register-message" class="message"></p>
     </div>
 
-    <div id="app-section" style="display: none;"> <!-- Initially hidden -->
-        <p>Willkommen, <span id="user-greeting"></span>!</p>
-        <button id="logout-button">Logout</button>
+    <div id="app-container" style="display: none;"> <!-- NEW WRAPPER -->
+        <div id="main-content"> <!-- EXISTING APP CONTENT WRAPPER -->
+            <div id="app-section"> <!-- This was the old main app container -->
+                <p>Willkommen, <span id="user-greeting"></span>!</p>
+                <button id="logout-button">Logout</button>
 
-        <hr>
+                <hr>
 
-        <h2>Album erstellen</h2>
-        <form id="create-album-form">
-            <input type="text" id="album-name-input" placeholder="Albumname" required><br>
-            <button type="submit">Album erstellen</button>
-        </form>
-        <p id="album-message" class="message"></p>
+                <h2>Album erstellen</h2>
+                <form id="create-album-form">
+                    <input type="text" id="album-name-input" placeholder="Albumname" required><br>
+                    <button type="submit">Album erstellen</button>
+                </form>
+                <p id="album-message" class="message"></p>
 
-        <hr>
+                <hr>
 
-        <h2>Foto hochladen</h2>
-        <form id="upload-form">
-            <label for="album-select-upload">In Album hochladen (optional):</label>
-            <select id="album-select-upload" name="albumId">
-                <option value="">-- Kein Album / Allgemein --</option>
-                <!-- Album-Optionen werden hier per JS geladen -->
-            </select><br>
-            <input type="file" id="photo-input" name="photo" accept="image/*" required><br>
-            <button type="submit">Hochladen</button>
-        </form>
-        <p id="upload-message" class="message"></p>
+                <h2>Foto hochladen</h2>
+                <form id="upload-form">
+                    <label for="album-select-upload">In Album hochladen (optional):</label>
+                    <select id="album-select-upload" name="albumId">
+                        <option value="">-- Kein Album / Allgemein --</option>
+                        <!-- Album-Optionen werden hier per JS geladen -->
+                    </select><br>
+                    <input type="file" id="photo-input" name="photo" accept="image/*" required><br>
+                    <button type="submit">Hochladen</button>
+                </form>
+                <p id="upload-message" class="message"></p>
 
-        <hr>
+                <hr>
 
-        <h2>Meine Alben</h2>
-        <div id="albums-list">
-            <!-- Albumliste wird hier geladen -->
-            <p>Lade Alben...</p>
-        </div>
+                <h2>Meine Alben</h2>
+                <div id="albums-list">
+                    <!-- Albumliste wird hier geladen -->
+                    <p>Lade Alben...</p>
+                </div>
 
-        <hr>
-        
-        <h3 id="current-album-title">Fotos im ausgewählten Album</h3>
-        <div id="album-photo-gallery">
-            <!-- Fotos des ausgewählten Albums werden hier geladen -->
-            <p>Bitte ein Album auswählen, um Fotos anzuzeigen.</p>
-        </div>
+                <hr>
+                
+                <h3 id="current-album-title">Fotos im ausgewählten Album</h3>
+                <div id="album-photo-gallery">
+                    <!-- Fotos des ausgewählten Albums werden hier geladen -->
+                    <p>Bitte ein Album auswählen, um Fotos anzuzeigen.</p>
+                </div>
 
-        <hr>
+                <hr>
 
-        <h2>Meine Fotos (alle)</h2>
-        <div id="photo-gallery">
-            <!-- Fotos werden hier geladen -->
-            <p>Lade Fotos...</p>
-        </div>
+                <h2>Meine Fotos (alle)</h2>
+                <div id="photo-gallery">
+                    <!-- Fotos werden hier geladen -->
+                    <p>Lade Fotos...</p>
+                </div>
 
-        <section>
-            <h2>Meine Fotos</h2>
-            <div id="my-photos" class="photo-gallery">
-                <!-- Fotos werden hier dynamisch eingefügt -->
+                <section>
+                    <h2>Meine Fotos</h2>
+                    <div id="my-photos" class="photo-gallery">
+                        <!-- Fotos werden hier dynamisch eingefügt -->
+                    </div>
+                </section>
+
+                <section>
+                    <h2>Alle Fotos</h2>
+                    <div id="all-photos" class="photo-gallery">
+                        <!-- Fotos werden hier dynamisch eingefügt -->
+                    </div>
+                </section>
+                <div id="photo-gallery-all">
+                    <!-- Fotos werden hier geladen -->
+                    <p>Lade Fotos...</p>
+                </div>
             </div>
-        </section>
-
-        <section>
-            <h2>Alle Fotos</h2>
-            <div id="all-photos" class="photo-gallery">
-                <!-- Fotos werden hier dynamisch eingefügt -->
-            </div>
-        </section>
-        <div id="photo-gallery-all">
-            <!-- Fotos werden hier geladen -->
-            <p>Lade Fotos...</p>
         </div>
+
+        <aside id="user-list-sidebar"> <!-- NEW USER LIST SIDEBAR -->
+            <h2>Registrierte Benutzer</h2>
+            <ul id="user-list-display">
+                <!-- Benutzer werden hier per JS geladen -->
+                <li>Lade Benutzer...</li>
+            </ul>
+        </aside>
     </div>
 
     <!-- jQuery (muss vor Lightbox geladen werden) -->
