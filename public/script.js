@@ -618,26 +618,26 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     })
     .then(data => {
         console.log('Login erfolgreich:', data);
+    
+    
         messageElement.textContent = data.message || 'Login erfolgreich!';
         messageElement.className = 'message success';
         
-        // Benutzerinfo speichern und UI aktualisieren
         localStorage.setItem('user', JSON.stringify(data.user));
         document.getElementById('user-greeting').textContent = data.user.username;
         
-        // UI-Zustand aktualisieren
         document.getElementById('auth-section').style.display = 'none';
         document.getElementById('app-section').style.display = 'block';
         
-        // Lade Benutzerinhalte
         loadUserContent();
+    })
     })
     .catch(error => {
         console.error('Login fehlgeschlagen:', error);
         messageElement.textContent = error.message || 'Login fehlgeschlagen. Bitte versuche es erneut.';
         messageElement.className = 'message error';
     });
-});
+
 
 // Funktion zum Laden der Benutzerinhalte nach dem Login
 function loadUserContent() {
@@ -756,9 +756,11 @@ function loadAlbumPhotos(albumId) {
 
 // Funktion zum Laden meiner Fotos
 function loadMyPhotos() {
+    // KEIN TOKEN MEHR NÖTIG
+
     fetch('/api/photos/my', {
         method: 'GET',
-        credentials: 'same-origin'
+        credentials: 'same-origin' // Wichtig für Sessions!
     })
     .then(response => {
         if (!response.ok) {
@@ -767,23 +769,21 @@ function loadMyPhotos() {
         return response.json();
     })
     .then(photos => {
-        renderPhotoGallery(photos, 'photo-gallery');
         renderPhotoGallery(photos, 'my-photos');
     })
     .catch(error => {
-        console.error('Fehler beim Laden meiner Fotos:', error);
-        document.getElementById('photo-gallery').innerHTML = 
-            `<p class="error">Fehler beim Laden der Fotos: ${error.message}</p>`;
-        document.getElementById('my-photos').innerHTML = 
-            `<p class="error">Fehler beim Laden der Fotos: ${error.message}</p>`;
+        console.error('Fehler:', error);
+        showMessage('Fehler beim Laden deiner Fotos', 'error');
     });
 }
 
 // Funktion zum Laden aller Fotos
 function loadAllPhotos() {
+    // KEIN TOKEN MEHR NÖTIG
+
     fetch('/api/photos', {
         method: 'GET',
-        credentials: 'same-origin'
+        credentials: 'same-origin' // Wichtig für Sessions!
     })
     .then(response => {
         if (!response.ok) {
@@ -796,11 +796,8 @@ function loadAllPhotos() {
         renderPhotoGallery(photos, 'all-photos');
     })
     .catch(error => {
-        console.error('Fehler beim Laden aller Fotos:', error);
-        document.getElementById('photo-gallery-all').innerHTML = 
-            `<p class="error">Fehler beim Laden der Fotos: ${error.message}</p>`;
-        document.getElementById('all-photos').innerHTML = 
-            `<p class="error">Fehler beim Laden der Fotos: ${error.message}</p>`;
+        console.error('Fehler:', error);
+        showMessage('Fehler beim Laden aller Fotos', 'error');
     });
 }
 
@@ -864,9 +861,11 @@ async function loadUserList() {
     if (!userListDisplay) return;
     userListDisplay.innerHTML = '<li>Lade Benutzer...</li>'; // Ladezustand anzeigen
 
-    try {
-        const response = await fetch('/api/users/list');
-        if (!response.ok) {
+        try {
+            const response = await fetch('/api/users', { 
+                credentials: 'same-origin' 
+            });
+            if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Fehler beim Laden der Benutzerliste');
         }
