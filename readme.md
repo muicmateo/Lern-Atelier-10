@@ -91,7 +91,7 @@ Ihr Projekt sollte nun alle Funktionalität haben, dass man es benutzen kann. Al
 - [ ] ...
 - [ ] ...
 
-✍️ Heute habe ich... (50-100 Wörter)
+✍️ Heute habe ich alle fehler die ich hatte (ausser einen) gelöst. Das laden der Bilder von anderen User ist nicht gegangen, das benutzen von Alben und die User Liste auch nicht.
 
 ☝️  Vergessen Sie nicht, den Code von heute auf github hochzuladen.
 
@@ -99,7 +99,7 @@ Ihr Projekt sollte nun alle Funktionalität haben, dass man es benutzen kann. Al
 
 Was fehlt Ihrem fertigen Projekt noch, um es auszuliefern? Reicht die Zeit für ein *nice-to-have feature*?
 
-- [ ] ...
+- [ ] Alben für alle User zugänglich machen
 
 Bereiten Sie in den verbleibenden 2 AP Ihre Präsentation vor
 
