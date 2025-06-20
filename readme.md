@@ -106,7 +106,7 @@ Bereiten Sie in den verbleibenden 2 AP Ihre Präsentation vor
 - [ ] Materialien der Präsentation vorbereiten
 - [ ] Präsentation üben
 
-✍️ Heute habe ich... (50-100 Wörter)
+✍️ Heute habe ich meine Präsentation vorbereitet. Ich habe mir überlegt einen QR-Code zu machen um dann die anderen auf meine Website zu redirecten und dann können alle das ausprobieren. Hoffentlich wird es nicht zu kaotisch mit den photo uploads. Ich habe auch ein Mockup für UI change gemacht aber bin unsicher ob ich es implementieren soll. 
 
 ☝️  Vergessen Sie nicht, die Unterlagen für Ihre Präsentation auf github hochzuladen.
 
